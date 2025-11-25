@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const login = (username: string, password: string) => {
-    if (username === "Accountant" && password === "dreamrent123") {
+    if (username === "info@dreamrent.kz" && password === "kyadr3thcxvsgxok)Rca") {
       localStorage.setItem("isAuthenticated", "true")
       localStorage.setItem("username", username)
       setIsAuthenticated(true)
