@@ -20,9 +20,30 @@ export type AccessPermission =
 
 export type TabAccessLevel = "view" | "edit" | "none"
 
+export type TabName = "rentals" | "inventory" | "contacts"
+
 export type TabPermission = {
-  tab: "rentals" | "inventory" | "contacts"
+  tab: TabName
   access: TabAccessLevel
+}
+
+// Разделы, которые имеют вкладки
+export type SectionWithTabs = "mopeds" | "cars" | "motorcycles" | "apartments"
+
+// Конфигурация вкладок для каждого раздела
+export const SECTION_TABS: Record<SectionWithTabs, TabName[]> = {
+  mopeds: ["rentals", "inventory", "contacts"],
+  cars: ["rentals", "inventory", "contacts"],
+  motorcycles: ["rentals", "inventory", "contacts"],
+  apartments: ["rentals", "inventory", "contacts"],
+}
+
+// Названия разделов для отображения
+export const SECTION_LABELS: Record<SectionWithTabs, string> = {
+  mopeds: "Мопеды",
+  cars: "Авто",
+  motorcycles: "Мотоциклы",
+  apartments: "Квартиры",
 }
 
 export type AppUser = {
@@ -74,16 +95,13 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, AccessPermission[]> = {
     "dashboard",
     "clients",
     "mopeds",
-    "mopeds.rentals",
-    "mopeds.inventory",
-    "mopeds.contacts",
     "motorcycles",
     "cars",
     "apartments",
     "projects",
     "finances",
   ],
-  viewer: ["dashboard", "clients", "mopeds", "mopeds.rentals", "motorcycles"],
+  viewer: ["dashboard", "clients", "mopeds", "motorcycles"],
 }
 
 export const ROLE_DEFAULT_TAB_PERMISSIONS: Record<UserRole, Record<string, TabPermission[]>> = {
@@ -93,9 +111,39 @@ export const ROLE_DEFAULT_TAB_PERMISSIONS: Record<UserRole, Record<string, TabPe
       { tab: "inventory", access: "edit" },
       { tab: "contacts", access: "edit" },
     ],
+    cars: [
+      { tab: "rentals", access: "edit" },
+      { tab: "inventory", access: "edit" },
+      { tab: "contacts", access: "edit" },
+    ],
+    motorcycles: [
+      { tab: "rentals", access: "edit" },
+      { tab: "inventory", access: "edit" },
+      { tab: "contacts", access: "edit" },
+    ],
+    apartments: [
+      { tab: "rentals", access: "edit" },
+      { tab: "inventory", access: "edit" },
+      { tab: "contacts", access: "edit" },
+    ],
   },
   manager: {
     mopeds: [
+      { tab: "rentals", access: "edit" },
+      { tab: "inventory", access: "edit" },
+      { tab: "contacts", access: "edit" },
+    ],
+    cars: [
+      { tab: "rentals", access: "edit" },
+      { tab: "inventory", access: "edit" },
+      { tab: "contacts", access: "edit" },
+    ],
+    motorcycles: [
+      { tab: "rentals", access: "edit" },
+      { tab: "inventory", access: "edit" },
+      { tab: "contacts", access: "edit" },
+    ],
+    apartments: [
       { tab: "rentals", access: "edit" },
       { tab: "inventory", access: "edit" },
       { tab: "contacts", access: "edit" },

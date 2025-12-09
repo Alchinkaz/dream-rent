@@ -15,11 +15,14 @@ import {
   type AppUser,
   type UserRole,
   type TabPermission,
+  type SectionWithTabs,
   PERMISSION_LABELS,
   ROLE_DEFAULT_PERMISSIONS,
   ROLE_DEFAULT_TAB_PERMISSIONS,
   TAB_LABELS,
   ACCESS_LEVEL_LABELS,
+  SECTION_TABS,
+  SECTION_LABELS,
   addUser,
   deleteUser,
   getUsers,
@@ -35,7 +38,20 @@ type FormState = {
   tabPermissions: Record<string, TabPermission[]>
 }
 
-const ALL_PERMISSIONS = Object.keys(PERMISSION_LABELS) as AccessPermission[]
+// Основные доступы (без вложенных, типа mopeds.rentals)
+const MAIN_PERMISSIONS: AccessPermission[] = [
+  "dashboard",
+  "finances",
+  "motorcycles",
+  "mopeds",
+  "cars",
+  "apartments",
+  "clients",
+  "projects",
+  "settings",
+  "help",
+  "users",
+]
 
 export function UsersContent() {
   const { isAdmin, user: currentUser } = useAuth()
@@ -108,7 +124,15 @@ export function UsersContent() {
       const nextPermissions = hasPermission
         ? prev.permissions.filter((p) => p !== permission)
         : [...prev.permissions, permission]
-      return { ...prev, permissions: nextPermissions }
+      
+      // Если снимаем доступ к разделу, удаляем права на его вкладки
+      let nextTabPermissions = { ...prev.tabPermissions }
+      if (hasPermission && (permission === "mopeds" || permission === "cars" || permission === "motorcycles" || permission === "apartments")) {
+        const { [permission]: removed, ...rest } = nextTabPermissions
+        nextTabPermissions = rest
+      }
+      
+      return { ...prev, permissions: nextPermissions, tabPermissions: nextTabPermissions }
     })
   }
 
@@ -260,7 +284,7 @@ export function UsersContent() {
               <div className="space-y-2">
                 <Label>Доступы</Label>
                 <div className="grid grid-cols-2 gap-2 rounded-lg border p-3">
-                  {ALL_PERMISSIONS.filter((p) => !p.startsWith("mopeds.")).map((permission) => (
+                  {MAIN_PERMISSIONS.map((permission) => (
                     <label key={permission} className="flex items-center gap-2 text-sm">
                       <Checkbox
                         checked={form.permissions.includes(permission)}
@@ -272,32 +296,51 @@ export function UsersContent() {
                 </div>
               </div>
 
-              {form.permissions.includes("mopeds") && (
-                <div className="space-y-2">
-                  <Label>Права на вкладки мопедов</Label>
-                  <div className="space-y-3 rounded-lg border p-3">
-                    {(["rentals", "inventory", "contacts"] as const).map((tab) => (
-                      <div key={tab} className="space-y-1">
-                        <div className="text-sm font-medium">{TAB_LABELS[tab]}</div>
-                        <div className="flex gap-3">
-                          {(["none", "view", "edit"] as const).map((access) => (
-                            <label key={access} className="flex items-center gap-2 text-sm">
-                              <input
-                                type="radio"
-                                name={`mopeds-${tab}`}
-                                checked={getTabAccess("mopeds", tab) === access}
-                                onChange={() => handleTabPermissionChange("mopeds", tab, access)}
-                                className="size-4"
-                              />
-                              <span>{ACCESS_LEVEL_LABELS[access]}</span>
-                            </label>
-                          ))}
+              <div className="space-y-2">
+                <Label>Права на вкладки</Label>
+                <div className="space-y-4 rounded-lg border p-3">
+                  {(Object.keys(SECTION_TABS) as SectionWithTabs[]).map((section) => {
+                    const hasAccess = form.permissions.includes(section)
+                    const tabs = SECTION_TABS[section]
+                    
+                    return (
+                      <div key={section} className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-semibold">{SECTION_LABELS[section]}</div>
+                          {!hasAccess && (
+                            <Badge variant="outline" className="text-xs">
+                              Нет доступа к разделу
+                            </Badge>
+                          )}
                         </div>
+                        {hasAccess && (
+                          <div className="space-y-2 pl-4 border-l-2">
+                            {tabs.map((tab) => (
+                              <div key={tab} className="space-y-1">
+                                <div className="text-xs text-muted-foreground">{TAB_LABELS[tab]}</div>
+                                <div className="flex gap-3">
+                                  {(["none", "view", "edit"] as const).map((access) => (
+                                    <label key={access} className="flex items-center gap-2 text-xs">
+                                      <input
+                                        type="radio"
+                                        name={`${section}-${tab}`}
+                                        checked={getTabAccess(section, tab) === access}
+                                        onChange={() => handleTabPermissionChange(section, tab, access)}
+                                        className="size-3"
+                                      />
+                                      <span>{ACCESS_LEVEL_LABELS[access]}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    )
+                  })}
                 </div>
-              )}
+              </div>
 
               {error && <p className="text-sm text-destructive">{error}</p>}
               {success && <p className="text-sm text-emerald-600">{success}</p>}
