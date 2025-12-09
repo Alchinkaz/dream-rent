@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const hydrateUser = () => {
       const authStatus = localStorage.getItem("isAuthenticated")
       const currentUserId = getCurrentUserMarker()
-      const current = getUserById(currentUserId)
+      let current = getUserById(currentUserId)
       
       // Если есть флаг авторизации, но пользователь не найден, попробуем найти по email
       if (authStatus === "true" && !current) {
@@ -45,15 +45,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const adminUser = users.find((u) => u.email.trim().toLowerCase() === normalizedAdminEmail)
         if (adminUser) {
           setCurrentUserMarker(adminUser.id)
-          setUser(adminUser)
-          setIsAuthenticated(true)
-          setIsLoading(false)
-          return
+          current = adminUser
         }
       }
       
-      setUser(current)
-      setIsAuthenticated(!!current && authStatus === "true")
+      // Если пользователь найден, убедимся что он сохранен правильно
+      if (current && authStatus === "true") {
+        setUser(current)
+        setIsAuthenticated(true)
+        // Убедимся что ID сохранен
+        if (getCurrentUserMarker() !== current.id) {
+          setCurrentUserMarker(current.id)
+        }
+      } else {
+        setUser(null)
+        setIsAuthenticated(false)
+      }
+      
       setIsLoading(false)
     }
 
@@ -75,6 +83,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setCurrentUserMarker(found.id)
       setIsAuthenticated(true)
       setUser(found)
+      // Принудительно обновляем состояние для немедленного отображения
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("users-updated"))
+      }
       return true
     }
     return false
@@ -88,7 +100,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const username = useMemo(() => user?.name || user?.email || null, [user])
-  const isAdmin = useMemo(() => (user?.role || "").toLowerCase() === "admin", [user])
+  const isAdmin = useMemo(() => {
+    const role = user?.role || ""
+    const result = role.toLowerCase() === "admin"
+    // Отладка (можно убрать после проверки)
+    if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+      console.log("[Auth] User role check:", { role, result, user: user?.email })
+    }
+    return result
+  }, [user])
 
   if (isLoading) {
     return <div className="flex h-screen items-center justify-center">Загрузка...</div>

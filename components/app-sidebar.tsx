@@ -78,6 +78,16 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, isAdmin } = useAuth()
   
+  // Отладка (можно убрать после проверки)
+  if (typeof window !== "undefined" && process.env.NODE_ENV === "development") {
+    console.log("[Sidebar] Auth state:", { 
+      isAdmin, 
+      userEmail: user?.email, 
+      userRole: user?.role,
+      userId: user?.id 
+    })
+  }
+  
   const navMain = useMemo(() => [
     {
       title: "Главная",
