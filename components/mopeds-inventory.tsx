@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { getMopeds, addMoped, updateMoped, deleteMoped, type Moped } from "@/lib/mopeds-store"
+import { useAuth } from "@/lib/auth"
 
 const STATUS_LABELS = {
   available: "Доступен",
@@ -38,6 +39,9 @@ const CONDITION_LABELS = {
 }
 
 export function MopedsInventory() {
+  const { hasTabAccess } = useAuth()
+  const canEdit = hasTabAccess("mopeds", "inventory", "edit")
+  
   const [mopeds, setMopeds] = React.useState<Moped[]>([])
   const [isDialogOpen, setIsDialogOpen] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("")
@@ -234,18 +238,14 @@ export function MopedsInventory() {
             className="pl-9"
           />
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline">
-              <IconFilter className="size-4 mr-2" />
-              Фильтр
-              {(statusFilters.length > 0 || conditionFilters.length > 0) && (
-                <Badge variant="secondary" className="ml-2 px-1 min-w-5 h-5 rounded-full">
-                  {statusFilters.length + conditionFilters.length}
-                </Badge>
-              )}
-            </Button>
-          </DropdownMenuTrigger>
+        {canEdit && (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={handleOpenAddDialog}>
+                <IconPlus className="size-4 mr-2" />
+                Добавить мопед
+              </Button>
+            </DialogTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>Статус</DropdownMenuLabel>
             <DropdownMenuCheckboxItem

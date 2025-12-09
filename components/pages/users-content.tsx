@@ -14,8 +14,12 @@ import {
   type AccessPermission,
   type AppUser,
   type UserRole,
+  type TabPermission,
   PERMISSION_LABELS,
   ROLE_DEFAULT_PERMISSIONS,
+  ROLE_DEFAULT_TAB_PERMISSIONS,
+  TAB_LABELS,
+  ACCESS_LEVEL_LABELS,
   addUser,
   deleteUser,
   getUsers,
@@ -28,6 +32,7 @@ type FormState = {
   password: string
   role: UserRole
   permissions: AccessPermission[]
+  tabPermissions: Record<string, TabPermission[]>
 }
 
 const ALL_PERMISSIONS = Object.keys(PERMISSION_LABELS) as AccessPermission[]
@@ -41,6 +46,7 @@ export function UsersContent() {
     password: "",
     role: "manager",
     permissions: ROLE_DEFAULT_PERMISSIONS.manager,
+    tabPermissions: ROLE_DEFAULT_TAB_PERMISSIONS.manager,
   })
   const [error, setError] = useState<string>("")
   const [success, setSuccess] = useState<string>("")
@@ -63,6 +69,7 @@ export function UsersContent() {
       password: "",
       role: "manager",
       permissions: ROLE_DEFAULT_PERMISSIONS.manager,
+      tabPermissions: ROLE_DEFAULT_TAB_PERMISSIONS.manager,
     })
   }
 
@@ -82,6 +89,7 @@ export function UsersContent() {
       password: form.password.trim(),
       role: form.role,
       permissions: form.permissions,
+      tabPermissions: form.tabPermissions,
     })
 
     if (addError) {
@@ -109,7 +117,37 @@ export function UsersContent() {
       ...prev,
       role,
       permissions: ROLE_DEFAULT_PERMISSIONS[role],
+      tabPermissions: ROLE_DEFAULT_TAB_PERMISSIONS[role],
     }))
+  }
+  
+  const handleTabPermissionChange = (section: string, tab: string, access: "view" | "edit" | "none") => {
+    setForm((prev) => {
+      const sectionPerms = prev.tabPermissions[section] || []
+      const existingIndex = sectionPerms.findIndex((p) => p.tab === tab)
+      let newSectionPerms: TabPermission[]
+      
+      if (existingIndex >= 0) {
+        newSectionPerms = [...sectionPerms]
+        newSectionPerms[existingIndex] = { tab: tab as any, access }
+      } else {
+        newSectionPerms = [...sectionPerms, { tab: tab as any, access }]
+      }
+      
+      return {
+        ...prev,
+        tabPermissions: {
+          ...prev.tabPermissions,
+          [section]: newSectionPerms,
+        },
+      }
+    })
+  }
+  
+  const getTabAccess = (section: string, tab: string): "view" | "edit" | "none" => {
+    const sectionPerms = form.tabPermissions[section] || []
+    const tabPerm = sectionPerms.find((p) => p.tab === tab)
+    return tabPerm?.access || "none"
   }
 
   const handleDelete = (id: string) => {
@@ -222,7 +260,7 @@ export function UsersContent() {
               <div className="space-y-2">
                 <Label>Доступы</Label>
                 <div className="grid grid-cols-2 gap-2 rounded-lg border p-3">
-                  {ALL_PERMISSIONS.map((permission) => (
+                  {ALL_PERMISSIONS.filter((p) => !p.startsWith("mopeds.")).map((permission) => (
                     <label key={permission} className="flex items-center gap-2 text-sm">
                       <Checkbox
                         checked={form.permissions.includes(permission)}
@@ -233,6 +271,33 @@ export function UsersContent() {
                   ))}
                 </div>
               </div>
+
+              {form.permissions.includes("mopeds") && (
+                <div className="space-y-2">
+                  <Label>Права на вкладки мопедов</Label>
+                  <div className="space-y-3 rounded-lg border p-3">
+                    {(["rentals", "inventory", "contacts"] as const).map((tab) => (
+                      <div key={tab} className="space-y-1">
+                        <div className="text-sm font-medium">{TAB_LABELS[tab]}</div>
+                        <div className="flex gap-3">
+                          {(["none", "view", "edit"] as const).map((access) => (
+                            <label key={access} className="flex items-center gap-2 text-sm">
+                              <input
+                                type="radio"
+                                name={`mopeds-${tab}`}
+                                checked={getTabAccess("mopeds", tab) === access}
+                                onChange={() => handleTabPermissionChange("mopeds", tab, access)}
+                                className="size-4"
+                              />
+                              <span>{ACCESS_LEVEL_LABELS[access]}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {error && <p className="text-sm text-destructive">{error}</p>}
               {success && <p className="text-sm text-emerald-600">{success}</p>}

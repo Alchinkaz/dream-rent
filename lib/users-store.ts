@@ -7,6 +7,9 @@ export type AccessPermission =
   | "finances"
   | "motorcycles"
   | "mopeds"
+  | "mopeds.rentals"
+  | "mopeds.inventory"
+  | "mopeds.contacts"
   | "cars"
   | "apartments"
   | "clients"
@@ -15,6 +18,13 @@ export type AccessPermission =
   | "help"
   | "users"
 
+export type TabAccessLevel = "view" | "edit" | "none"
+
+export type TabPermission = {
+  tab: "rentals" | "inventory" | "contacts"
+  access: TabAccessLevel
+}
+
 export type AppUser = {
   id: string
   name: string
@@ -22,6 +32,7 @@ export type AppUser = {
   password: string
   role: UserRole
   permissions: AccessPermission[]
+  tabPermissions?: Record<string, TabPermission[]> // Например: { "mopeds": [{ tab: "rentals", access: "edit" }, ...] }
   createdAt: string
 }
 
@@ -33,6 +44,9 @@ export const PERMISSION_LABELS: Record<AccessPermission, string> = {
   finances: "Финансы",
   motorcycles: "Мотоциклы",
   mopeds: "Мопеды",
+  "mopeds.rentals": "Мопеды → Аренды",
+  "mopeds.inventory": "Мопеды → Учет",
+  "mopeds.contacts": "Мопеды → Контакты",
   cars: "Авто",
   apartments: "Квартиры",
   clients: "Клиенты",
@@ -42,10 +56,58 @@ export const PERMISSION_LABELS: Record<AccessPermission, string> = {
   users: "Пользователи",
 }
 
+export const TAB_LABELS: Record<string, string> = {
+  rentals: "Аренды",
+  inventory: "Учет",
+  contacts: "Контакты",
+}
+
+export const ACCESS_LEVEL_LABELS: Record<TabAccessLevel, string> = {
+  view: "Только просмотр",
+  edit: "Редактирование",
+  none: "Нет доступа",
+}
+
 export const ROLE_DEFAULT_PERMISSIONS: Record<UserRole, AccessPermission[]> = {
   admin: Object.keys(PERMISSION_LABELS) as AccessPermission[],
-  manager: ["dashboard", "clients", "mopeds", "motorcycles", "cars", "apartments", "projects", "finances"],
-  viewer: ["dashboard", "clients", "mopeds", "motorcycles"],
+  manager: [
+    "dashboard",
+    "clients",
+    "mopeds",
+    "mopeds.rentals",
+    "mopeds.inventory",
+    "mopeds.contacts",
+    "motorcycles",
+    "cars",
+    "apartments",
+    "projects",
+    "finances",
+  ],
+  viewer: ["dashboard", "clients", "mopeds", "mopeds.rentals", "motorcycles"],
+}
+
+export const ROLE_DEFAULT_TAB_PERMISSIONS: Record<UserRole, Record<string, TabPermission[]>> = {
+  admin: {
+    mopeds: [
+      { tab: "rentals", access: "edit" },
+      { tab: "inventory", access: "edit" },
+      { tab: "contacts", access: "edit" },
+    ],
+  },
+  manager: {
+    mopeds: [
+      { tab: "rentals", access: "edit" },
+      { tab: "inventory", access: "edit" },
+      { tab: "contacts", access: "edit" },
+    ],
+  },
+  viewer: {
+    mopeds: [
+      { tab: "rentals", access: "view" },
+      { tab: "inventory", access: "view" },
+      { tab: "contacts", access: "view" },
+    ],
+  },
 }
 
 const DEFAULT_ADMIN: AppUser = {
@@ -55,6 +117,7 @@ const DEFAULT_ADMIN: AppUser = {
   password: "kyadr3thcxvsgxok)Rca",
   role: "admin",
   permissions: ROLE_DEFAULT_PERMISSIONS.admin,
+  tabPermissions: ROLE_DEFAULT_TAB_PERMISSIONS.admin,
   createdAt: new Date().toISOString(),
 }
 
@@ -127,6 +190,7 @@ export function addUser(newUser: Omit<AppUser, "id" | "createdAt">): { user?: Ap
     id: crypto.randomUUID ? crypto.randomUUID() : `user-${Date.now()}`,
     email: normalizedEmail,
     permissions: newUser.permissions.length ? newUser.permissions : ROLE_DEFAULT_PERMISSIONS[newUser.role],
+    tabPermissions: newUser.tabPermissions || ROLE_DEFAULT_TAB_PERMISSIONS[newUser.role],
     createdAt: new Date().toISOString(),
   }
 

@@ -1,6 +1,9 @@
 "use client"
 
 import * as React from "react"
+import { usePathname, useRouter } from "next/navigation"
+import Link from "next/link"
+import { useAuth } from "@/lib/auth"
 import {
   closestCenter,
   DndContext,
@@ -200,7 +203,51 @@ function KanbanColumn({
 }
 
 export function MopedsContent() {
-  const [activeFilter, setActiveFilter] = React.useState<"rentals" | "inventory" | "contacts">("rentals")
+  const pathname = usePathname()
+  const router = useRouter()
+  const { hasTabAccess } = useAuth()
+  
+  // Определяем активную вкладку из URL
+  const getActiveTab = (): "rentals" | "inventory" | "contacts" | null => {
+    if (pathname.includes("/rentals")) return "rentals"
+    if (pathname.includes("/inventory")) return "inventory"
+    if (pathname.includes("/contacts")) return "contacts"
+    return null // Если на /mopeds без вкладки
+  }
+  
+  // Проверяем доступ к вкладкам
+  const canAccessRentals = hasTabAccess("mopeds", "rentals", "view")
+  const canAccessInventory = hasTabAccess("mopeds", "inventory", "view")
+  const canAccessContacts = hasTabAccess("mopeds", "contacts", "view")
+  
+  const canEditRentals = hasTabAccess("mopeds", "rentals", "edit")
+  const canEditInventory = hasTabAccess("mopeds", "inventory", "edit")
+  const canEditContacts = hasTabAccess("mopeds", "contacts", "edit")
+  
+  // Определяем первую доступную вкладку для редиректа
+  const getDefaultTab = (): "rentals" | "inventory" | "contacts" => {
+    if (canAccessRentals) return "rentals"
+    if (canAccessInventory) return "inventory"
+    if (canAccessContacts) return "contacts"
+    return "rentals" // Fallback
+  }
+  
+  const [activeFilter, setActiveFilter] = React.useState<"rentals" | "inventory" | "contacts">(() => {
+    const tab = getActiveTab()
+    return tab || getDefaultTab()
+  })
+  
+  // Редирект на первую доступную вкладку, если на /mopeds без вкладки
+  React.useEffect(() => {
+    const tab = getActiveTab()
+    if (!tab && pathname === "/mopeds") {
+      const defaultTab = getDefaultTab()
+      router.replace(`/mopeds/${defaultTab}`)
+      setActiveFilter(defaultTab)
+    } else if (tab && tab !== activeFilter) {
+      setActiveFilter(tab)
+    }
+  }, [pathname, router, activeFilter, canAccessRentals, canAccessInventory, canAccessContacts])
   const [currentView, setCurrentView] = React.useState<"kanban" | "table">("kanban")
   const [deals, setDeals] = React.useState<DealWithFields[]>([])
   const [stages, setStages] = React.useState<KanbanStage[]>([])
@@ -631,30 +678,36 @@ export function MopedsContent() {
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="border-b px-4 lg:px-6 mb-3">
         <nav className="flex gap-6 overflow-x-auto" aria-label="Mopeds filter">
-          <button
-            onClick={() => setActiveFilter("rentals")}
-            className={`text-muted-foreground hover:text-foreground relative whitespace-nowrap border-b-2 text-sm font-medium transition-colors pb-3.5 ${
-              activeFilter === "rentals" ? "text-foreground border-foreground" : "border-transparent"
-            }`}
-          >
-            Аренды
-          </button>
-          <button
-            onClick={() => setActiveFilter("inventory")}
-            className={`text-muted-foreground hover:text-foreground relative whitespace-nowrap border-b-2 text-sm font-medium transition-colors pb-3.5 ${
-              activeFilter === "inventory" ? "text-foreground border-foreground" : "border-transparent"
-            }`}
-          >
-            Учет
-          </button>
-          <button
-            onClick={() => setActiveFilter("contacts")}
-            className={`text-muted-foreground hover:text-foreground relative whitespace-nowrap border-b-2 text-sm font-medium transition-colors pb-3.5 ${
-              activeFilter === "contacts" ? "text-foreground border-foreground" : "border-transparent"
-            }`}
-          >
-            Контакты
-          </button>
+          {canAccessRentals && (
+            <Link
+              href="/mopeds/rentals"
+              className={`text-muted-foreground hover:text-foreground relative whitespace-nowrap border-b-2 text-sm font-medium transition-colors pb-3.5 ${
+                activeFilter === "rentals" ? "text-foreground border-foreground" : "border-transparent"
+              }`}
+            >
+              Аренды
+            </Link>
+          )}
+          {canAccessInventory && (
+            <Link
+              href="/mopeds/inventory"
+              className={`text-muted-foreground hover:text-foreground relative whitespace-nowrap border-b-2 text-sm font-medium transition-colors pb-3.5 ${
+                activeFilter === "inventory" ? "text-foreground border-foreground" : "border-transparent"
+              }`}
+            >
+              Учет
+            </Link>
+          )}
+          {canAccessContacts && (
+            <Link
+              href="/mopeds/contacts"
+              className={`text-muted-foreground hover:text-foreground relative whitespace-nowrap border-b-2 text-sm font-medium transition-colors pb-3.5 ${
+                activeFilter === "contacts" ? "text-foreground border-foreground" : "border-transparent"
+              }`}
+            >
+              Контакты
+            </Link>
+          )}
         </nav>
       </div>
 
@@ -670,13 +723,14 @@ export function MopedsContent() {
                 className="pl-9"
               />
             </div>
-            <Dialog open={isContactDialogOpen} onOpenChange={setIsContactDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={handleOpenAddContactDialog}>
-                  <IconPlus className="size-4 mr-2" />
-                  Добавить клиента
-                </Button>
-              </DialogTrigger>
+            {canEditContacts && (
+              <Dialog open={isContactDialogOpen} onOpenChange={setIsContactDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={handleOpenAddContactDialog}>
+                    <IconPlus className="size-4 mr-2" />
+                    Добавить клиента
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="!max-w-4xl w-[85vw] max-h-[95vh] h-[95vh] overflow-hidden flex flex-col p-0">
                 <ContactDetailModal
                   contact={editingContact}
@@ -687,6 +741,7 @@ export function MopedsContent() {
                 />
               </DialogContent>
             </Dialog>
+            )}
           </div>
 
           <div className="space-y-3">
@@ -724,6 +779,7 @@ export function MopedsContent() {
                     <p className="text-sm text-muted-foreground">{contact.phone}</p>
                   </div>
                   <div className="flex items-center gap-2">
+                  {canEditContacts && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -732,6 +788,7 @@ export function MopedsContent() {
                     >
                       <IconTrash className="size-4 text-destructive" />
                     </Button>
+                  )}
                   </div>
                 </div>
               ))
@@ -803,10 +860,12 @@ export function MopedsContent() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <Button size="sm" onClick={() => handleAddDealToStage(stages[0]?.id || "new")}>
-                <IconPlus className="size-4" />
-                Новая заявка
-              </Button>
+              {canEditRentals && (
+                <Button size="sm" onClick={() => handleAddDealToStage(stages[0]?.id || "new")}>
+                  <IconPlus className="size-4" />
+                  Новая заявка
+                </Button>
+              )}
             </div>
           </div>
 

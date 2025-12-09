@@ -12,6 +12,7 @@ import {
   setCurrentUserMarker,
   clearCurrentUserMarker,
   getUsers,
+  ROLE_DEFAULT_TAB_PERMISSIONS,
 } from "./users-store"
 
 type AuthContextType = {
@@ -19,6 +20,8 @@ type AuthContextType = {
   user: AppUser | null
   username: string | null
   isAdmin: boolean
+  hasPermission: (permission: string) => boolean
+  hasTabAccess: (section: string, tab: string, level: "view" | "edit") => boolean
   login: (email: string, password: string) => boolean
   logout: () => void
 }
@@ -101,13 +104,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const username = useMemo(() => user?.name || user?.email || null, [user])
   const isAdmin = useMemo(() => (user?.role || "").toLowerCase() === "admin", [user])
+  
+  const hasPermission = useMemo(() => {
+    return (permission: string) => {
+      if (!user) return false
+      if (isAdmin) return true
+      return user.permissions.includes(permission as any)
+    }
+  }, [user, isAdmin])
+  
+  const hasTabAccess = useMemo(() => {
+    return (section: string, tab: string, level: "view" | "edit") => {
+      if (!user) return false
+      if (isAdmin) return true
+      
+      // Проверяем базовое разрешение на раздел
+      if (!user.permissions.includes(section as any)) return false
+      
+      // Проверяем права на вкладку
+      const tabPerms = user.tabPermissions?.[section]
+      if (!tabPerms) {
+        // Если нет настроек вкладок, используем дефолтные для роли
+        const defaultPerms = ROLE_DEFAULT_TAB_PERMISSIONS[user.role]?.[section] || []
+        const tabPerm = defaultPerms.find((p) => p.tab === tab)
+        if (!tabPerm) return false
+        if (tabPerm.access === "none") return false
+        if (level === "edit" && tabPerm.access !== "edit") return false
+        return true
+      }
+      
+      const tabPerm = tabPerms.find((p) => p.tab === tab)
+      if (!tabPerm) return false
+      if (tabPerm.access === "none") return false
+      if (level === "edit" && tabPerm.access !== "edit") return false
+      return true
+    }
+  }, [user, isAdmin])
 
   if (isLoading) {
     return <div className="flex h-screen items-center justify-center">Загрузка...</div>
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, username, isAdmin, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, username, isAdmin, hasPermission, hasTabAccess, login, logout }}>
       {children}
     </AuthContext.Provider>
   )
