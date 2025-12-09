@@ -1,6 +1,7 @@
 "use client"
 
 import type * as React from "react"
+import { useMemo } from "react"
 import {
   IconHome,
   IconSettings,
@@ -76,7 +77,8 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user, isAdmin } = useAuth()
-  const navMain = [
+  
+  const navMain = useMemo(() => [
     {
       title: "Главная",
       url: "/",
@@ -126,7 +128,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: "/settings",
       icon: IconSettings,
     },
-  ]
+  ], [isAdmin])
 
   const navSecondary: any[] = []
 

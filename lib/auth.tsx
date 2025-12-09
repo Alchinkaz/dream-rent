@@ -11,6 +11,7 @@ import {
   getUserById,
   setCurrentUserMarker,
   clearCurrentUserMarker,
+  getUsers,
 } from "./users-store"
 
 type AuthContextType = {
@@ -31,10 +32,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const hydrateUser = () => {
+      const authStatus = localStorage.getItem("isAuthenticated")
       const currentUserId = getCurrentUserMarker()
       const current = getUserById(currentUserId)
+      
+      // Если есть флаг авторизации, но пользователь не найден, попробуем найти по email
+      if (authStatus === "true" && !current) {
+        // Попробуем найти админа по умолчанию
+        const adminEmail = "info@dreamrent.kz"
+        const users = getUsers()
+        const normalizedAdminEmail = adminEmail.trim().toLowerCase()
+        const adminUser = users.find((u) => u.email.trim().toLowerCase() === normalizedAdminEmail)
+        if (adminUser) {
+          setCurrentUserMarker(adminUser.id)
+          setUser(adminUser)
+          setIsAuthenticated(true)
+          setIsLoading(false)
+          return
+        }
+      }
+      
       setUser(current)
-      setIsAuthenticated(!!current)
+      setIsAuthenticated(!!current && authStatus === "true")
       setIsLoading(false)
     }
 
