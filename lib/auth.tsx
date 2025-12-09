@@ -2,13 +2,23 @@
 
 import type React from "react"
 
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import type { AppUser } from "./users-store"
+import {
+  findUserByCredentials,
+  getCurrentUserMarker,
+  getUserById,
+  setCurrentUserMarker,
+  clearCurrentUserMarker,
+} from "./users-store"
 
 type AuthContextType = {
   isAuthenticated: boolean
+  user: AppUser | null
   username: string | null
-  login: (username: string, password: string) => boolean
+  isAdmin: boolean
+  login: (email: string, password: string) => boolean
   logout: () => void
 }
 
@@ -16,31 +26,36 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [username, setUsername] = useState<string | null>(null)
+  const [user, setUser] = useState<AppUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Check if user is authenticated on mount
-    const authStatus = localStorage.getItem("isAuthenticated")
-    const storedUsername = localStorage.getItem("username")
-    setIsAuthenticated(authStatus === "true")
-    setUsername(storedUsername)
-    setIsLoading(false)
+    const hydrateUser = () => {
+      const currentUserId = getCurrentUserMarker()
+      const current = getUserById(currentUserId)
+      setUser(current)
+      setIsAuthenticated(!!current)
+      setIsLoading(false)
+    }
+
+    hydrateUser()
+    const handler = () => hydrateUser()
+    if (typeof window !== "undefined") {
+      window.addEventListener("users-updated", handler)
+      return () => window.removeEventListener("users-updated", handler)
+    }
   }, [])
 
-  const login = (username: string, password: string) => {
-    const trimmedUsername = username.trim().toLowerCase()
+  const login = (email: string, password: string) => {
+    const trimmedEmail = email.trim().toLowerCase()
     const trimmedPassword = password.trim()
-    
-    // Проверка учетных данных
-    const validUsername = "info@dreamrent.kz"
-    const validPassword = "kyadr3thcxvsgxok)Rca"
-    
-    if (trimmedUsername === validUsername && trimmedPassword === validPassword) {
+
+    const found = findUserByCredentials(trimmedEmail, trimmedPassword)
+    if (found) {
       localStorage.setItem("isAuthenticated", "true")
-      localStorage.setItem("username", validUsername)
+      setCurrentUserMarker(found.id)
       setIsAuthenticated(true)
-      setUsername(validUsername)
+      setUser(found)
       return true
     }
     return false
@@ -48,16 +63,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem("isAuthenticated")
-    localStorage.removeItem("username")
+    clearCurrentUserMarker()
     setIsAuthenticated(false)
-    setUsername(null)
+    setUser(null)
   }
+
+  const username = useMemo(() => user?.name || user?.email || null, [user])
+  const isAdmin = useMemo(() => (user?.role || "").toLowerCase() === "admin", [user])
 
   if (isLoading) {
     return <div className="flex h-screen items-center justify-center">Загрузка...</div>
   }
 
-  return <AuthContext.Provider value={{ isAuthenticated, username, login, logout }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={{ isAuthenticated, user, username, isAdmin, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {

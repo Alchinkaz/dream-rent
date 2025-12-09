@@ -12,7 +12,7 @@ import { useAuth } from "@/lib/auth"
 export default function LoginPage() {
   const router = useRouter()
   const { login: authLogin, isAuthenticated } = useAuth()
-  const [login, setLogin] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
 
@@ -25,12 +25,12 @@ export default function LoginPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
-    const success = authLogin(login, password)
+    const success = authLogin(email, password)
 
     if (success) {
       router.push("/")
     } else {
-      setError("Неверный логин или пароль")
+      setError("Неверный email или пароль")
     }
   }
 
@@ -48,13 +48,13 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="mt-8 space-y-6 bg-card border rounded-lg p-8 shadow-sm">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="login">Логин</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="login"
-                type="text"
-                value={login}
+                id="email"
+                type="email"
+                value={email}
                 onChange={(e) => {
-                  setLogin(e.target.value)
+                  setEmail(e.target.value)
                   setError("")
                 }}
                 required

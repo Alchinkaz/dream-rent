@@ -19,6 +19,7 @@ import { ApartmentsContent } from "@/components/pages/apartments-content"
 import { ClientsContent } from "@/components/pages/clients-content"
 import { SettingsContent } from "@/components/pages/settings-content"
 import { GetHelpContent } from "@/components/pages/get-help-content"
+import { UsersContent } from "@/components/pages/users-content"
 
 export default function Page() {
   const { currentPage } = useNavigation()
@@ -58,6 +59,8 @@ export default function Page() {
         return "Настройки"
       case "help":
         return "Помощь"
+      case "users":
+        return "Пользователи"
       case "Home":
       default:
         return "Главная"
@@ -86,6 +89,8 @@ export default function Page() {
         return <SettingsContent />
       case "help":
         return <GetHelpContent />
+      case "users":
+        return <UsersContent />
       case "Home":
       default:
         return <DashboardNewContent />

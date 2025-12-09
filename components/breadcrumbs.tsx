@@ -39,6 +39,10 @@ export function Breadcrumbs() {
       case "clients":
         crumbs.push({ label: "Клиенты" })
         break
+      case "Users":
+      case "users":
+        crumbs.push({ label: "Пользователи" })
+        break
       case "settings":
         crumbs.push({ label: "Настройки" })
         break

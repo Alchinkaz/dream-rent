@@ -9,12 +9,14 @@ import {
   IconCar,
   IconBuilding,
   IconUsers,
+  IconShieldLock,
 } from "@tabler/icons-react"
 
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarTrigger } from "@/components/ui/sidebar"
+import { useAuth } from "@/lib/auth"
 
 const data = {
   user: {
@@ -73,6 +75,7 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user, isAdmin } = useAuth()
   const navMain = [
     {
       title: "Главная",
@@ -109,6 +112,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: "/clients",
       icon: IconUsers,
     },
+    ...(isAdmin
+      ? [
+          {
+            title: "Пользователи",
+            url: "/users",
+            icon: IconShieldLock,
+          },
+        ]
+      : []),
     {
       title: "Настройки",
       url: "/settings",
@@ -133,7 +145,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {navSecondary.length > 0 && <NavSecondary items={navSecondary} className="mt-auto" />}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser
+          user={{
+            name: user?.name || data.user.name,
+            email: user?.email || data.user.email,
+            avatar: data.user.avatar,
+          }}
+        />
       </SidebarFooter>
     </Sidebar>
   )
