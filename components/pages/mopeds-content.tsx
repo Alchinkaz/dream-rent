@@ -252,25 +252,40 @@ export function MopedsContent() {
   React.useEffect(() => {
     const loadData = async () => {
       setLoading(true)
-      const [loadedStages, loadedFields, loadedGroups, loadedDeals] = await Promise.all([
-        getKanbanStages(),
-        getCustomFields(),
-        getFieldGroups(),
-        getDeals(),
-      ])
-      setStages(loadedStages)
-      setCustomFields(loadedFields)
-      setFieldGroups(loadedGroups)
-      setDeals(loadedDeals)
-      // Preload mopeds once for instant lookups
       try {
-        const [loadedMopeds, loadedContacts] = await Promise.all([getMopeds(), getContacts()])
-        setMopeds(loadedMopeds)
-        setContacts(loadedContacts)
-      } catch (e) {
-        console.error("Error preloading mopeds/contacts", e)
+        const [loadedStages, loadedFields, loadedGroups, loadedDeals] = await Promise.all([
+          getKanbanStages(),
+          getCustomFields(),
+          getFieldGroups(),
+          getDeals(),
+        ])
+        console.log("[MopedsContent] Loaded data:", {
+          stages: loadedStages.length,
+          fields: loadedFields.length,
+          groups: loadedGroups.length,
+          deals: loadedDeals.length,
+        })
+        setStages(loadedStages)
+        setCustomFields(loadedFields)
+        setFieldGroups(loadedGroups)
+        setDeals(loadedDeals)
+        // Preload mopeds once for instant lookups
+        try {
+          const [loadedMopeds, loadedContacts] = await Promise.all([getMopeds(), getContacts()])
+          console.log("[MopedsContent] Loaded mopeds/contacts:", {
+            mopeds: loadedMopeds.length,
+            contacts: loadedContacts.length,
+          })
+          setMopeds(loadedMopeds)
+          setContacts(loadedContacts)
+        } catch (e) {
+          console.error("Error preloading mopeds/contacts", e)
+        }
+      } catch (error) {
+        console.error("[MopedsContent] Error loading data:", error)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     loadData()
 

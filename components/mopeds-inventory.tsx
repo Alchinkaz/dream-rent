@@ -80,8 +80,13 @@ export function MopedsInventory() {
 
   React.useEffect(() => {
     const loadMopeds = async () => {
-      const loadedMopeds = await getMopeds()
-      setMopeds(loadedMopeds)
+      try {
+        const loadedMopeds = await getMopeds()
+        console.log("[MopedsInventory] Loaded mopeds:", loadedMopeds.length)
+        setMopeds(loadedMopeds)
+      } catch (error) {
+        console.error("[MopedsInventory] Error loading mopeds:", error)
+      }
     }
     loadMopeds()
   }, [])
