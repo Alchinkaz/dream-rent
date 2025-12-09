@@ -17,10 +17,56 @@ export type Moped = {
   createdAt: string
 }
 
+const CACHE_KEY = 'crm_mopeds_cache'
+const CACHE_TIMESTAMP_KEY = 'crm_mopeds_cache_timestamp'
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 минут
+
 // Simple in-memory cache to avoid repeated full fetches per card/modal
 let mopedCache: Map<string, Moped> | null = null
 let mopedCacheTimestamp = 0
 const MOPED_CACHE_TTL_MS = 60_000
+
+// Функции для работы с localStorage кэшем
+function getCachedMopeds(): Moped[] | null {
+  if (typeof window === 'undefined') return null
+  
+  try {
+    const cached = localStorage.getItem(CACHE_KEY)
+    const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY)
+    
+    if (!cached || !timestamp) return null
+    
+    const age = Date.now() - parseInt(timestamp, 10)
+    if (age > CACHE_TTL_MS) {
+      // Кэш устарел
+      localStorage.removeItem(CACHE_KEY)
+      localStorage.removeItem(CACHE_TIMESTAMP_KEY)
+      return null
+    }
+    
+    return JSON.parse(cached) as Moped[]
+  } catch (error) {
+    console.error('Error reading mopeds cache:', error)
+    return null
+  }
+}
+
+function setCachedMopeds(mopeds: Moped[]): void {
+  if (typeof window === 'undefined') return
+  
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(mopeds))
+    localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString())
+  } catch (error) {
+    console.error('Error saving mopeds cache:', error)
+  }
+}
+
+function clearMopedsCache(): void {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem(CACHE_KEY)
+  localStorage.removeItem(CACHE_TIMESTAMP_KEY)
+}
 
 // Map database column names to our type
 function mapDbToMoped(dbMoped: any): Moped {
@@ -83,6 +129,33 @@ function mapMopedToDb(moped: Partial<Moped>): any {
 }
 
 export async function getMopeds(): Promise<Moped[]> {
+  // Сначала проверяем кэш
+  const cached = getCachedMopeds()
+  if (cached) {
+    // Обновляем in-memory кэш
+    mopedCache = new Map(cached.map((m: Moped) => [m.id, m]))
+    mopedCacheTimestamp = Date.now()
+    // Возвращаем кэшированные данные сразу, но продолжаем обновление в фоне
+    setTimeout(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('mopeds')
+          .select('*')
+          .order('brand', { ascending: true })
+
+        if (!error && data) {
+          const mapped = data.map(mapDbToMoped)
+          setCachedMopeds(mapped)
+          mopedCache = new Map(mapped.map((m: Moped) => [m.id, m]))
+          mopedCacheTimestamp = Date.now()
+        }
+      } catch (error) {
+        console.error('Error refreshing mopeds cache:', error)
+      }
+    }, 0)
+    return cached
+  }
+
   try {
     const { data, error } = await supabase
       .from('mopeds')
@@ -95,7 +168,9 @@ export async function getMopeds(): Promise<Moped[]> {
     }
 
     const mapped = data.map(mapDbToMoped)
-    // refresh cache
+    // Сохраняем в кэш
+    setCachedMopeds(mapped)
+    // refresh in-memory cache
     mopedCache = new Map(mapped.map((m: Moped) => [m.id, m]))
     mopedCacheTimestamp = Date.now()
     return mapped
@@ -151,7 +226,10 @@ export async function addMoped(moped: Omit<Moped, "id" | "createdAt">): Promise<
       return null
     }
 
-    return mapDbToMoped(data)
+    const newMoped = mapDbToMoped(data)
+    // Инвалидируем кэш
+    clearMopedsCache()
+    return newMoped
   } catch (error) {
     console.error('Error adding moped:', error)
     return null
@@ -169,7 +247,11 @@ export async function updateMoped(id: string, updates: Partial<Omit<Moped, "id" 
 
     if (error) {
       console.error('Error updating moped:', error)
+      return
     }
+
+    // Инвалидируем кэш
+    clearMopedsCache()
   } catch (error) {
     console.error('Error updating moped:', error)
   }
@@ -184,7 +266,11 @@ export async function deleteMoped(id: string): Promise<void> {
 
     if (error) {
       console.error('Error deleting moped:', error)
+      return
     }
+
+    // Инвалидируем кэш
+    clearMopedsCache()
   } catch (error) {
     console.error('Error deleting moped:', error)
   }

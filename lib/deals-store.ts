@@ -1,6 +1,51 @@
 import { supabase } from './supabase'
 import type { DealWithFields } from './types/crm-fields'
 
+const CACHE_KEY = 'crm_deals_cache'
+const CACHE_TIMESTAMP_KEY = 'crm_deals_cache_timestamp'
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 минут
+
+// Функции для работы с localStorage кэшем
+function getCachedDeals(): DealWithFields[] | null {
+  if (typeof window === 'undefined') return null
+  
+  try {
+    const cached = localStorage.getItem(CACHE_KEY)
+    const timestamp = localStorage.getItem(CACHE_TIMESTAMP_KEY)
+    
+    if (!cached || !timestamp) return null
+    
+    const age = Date.now() - parseInt(timestamp, 10)
+    if (age > CACHE_TTL_MS) {
+      localStorage.removeItem(CACHE_KEY)
+      localStorage.removeItem(CACHE_TIMESTAMP_KEY)
+      return null
+    }
+    
+    return JSON.parse(cached) as DealWithFields[]
+  } catch (error) {
+    console.error('Error reading deals cache:', error)
+    return null
+  }
+}
+
+function setCachedDeals(deals: DealWithFields[]): void {
+  if (typeof window === 'undefined') return
+  
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(deals))
+    localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString())
+  } catch (error) {
+    console.error('Error saving deals cache:', error)
+  }
+}
+
+function clearDealsCache(): void {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem(CACHE_KEY)
+  localStorage.removeItem(CACHE_TIMESTAMP_KEY)
+}
+
 // Map database column names to our DealWithFields type
 function mapDbToDeal(dbDeal: any): DealWithFields {
   return {
@@ -80,6 +125,28 @@ function mapDealToDb(deal: Partial<DealWithFields>): any {
 }
 
 export async function getDeals(): Promise<DealWithFields[]> {
+  // Сначала проверяем кэш
+  const cached = getCachedDeals()
+  if (cached) {
+    // Возвращаем кэшированные данные сразу, но продолжаем обновление в фоне
+    setTimeout(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('deals')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (!error && data) {
+          const mapped = data.map(mapDbToDeal)
+          setCachedDeals(mapped)
+        }
+      } catch (error) {
+        console.error('Error refreshing deals cache:', error)
+      }
+    }, 0)
+    return cached
+  }
+
   try {
     const { data, error } = await supabase
       .from('deals')
@@ -91,7 +158,9 @@ export async function getDeals(): Promise<DealWithFields[]> {
       return []
     }
 
-    return data.map(mapDbToDeal)
+    const mapped = data.map(mapDbToDeal)
+    setCachedDeals(mapped)
+    return mapped
   } catch (error) {
     console.error('Error fetching deals:', error)
     return []
@@ -153,7 +222,9 @@ export async function createDeal(deal: Partial<DealWithFields>): Promise<DealWit
       return null
     }
 
-    return mapDbToDeal(data)
+    const newDeal = mapDbToDeal(data)
+    clearDealsCache()
+    return newDeal
   } catch (error) {
     console.error('Error creating deal:', error)
     return null
@@ -176,7 +247,9 @@ export async function updateDeal(id: string, updates: Partial<DealWithFields>): 
       return null
     }
 
-    return mapDbToDeal(data)
+    const updated = mapDbToDeal(data)
+    clearDealsCache()
+    return updated
   } catch (error) {
     console.error('Error updating deal:', error)
     return null
@@ -195,6 +268,7 @@ export async function deleteDeal(id: string): Promise<boolean> {
       return false
     }
 
+    clearDealsCache()
     return true
   } catch (error) {
     console.error('Error deleting deal:', error)
@@ -203,5 +277,7 @@ export async function deleteDeal(id: string): Promise<boolean> {
 }
 
 export async function moveDealToStage(dealId: string, stageId: string): Promise<DealWithFields | null> {
-  return updateDeal(dealId, { stage: stageId })
+  const result = await updateDeal(dealId, { stage: stageId })
+  // updateDeal уже очищает кэш
+  return result
 }

@@ -1,6 +1,120 @@
 import { supabase } from './supabase'
 import type { CustomField, FieldGroup, KanbanStage } from "./types/crm-fields"
 
+const STAGES_CACHE_KEY = 'crm_stages_cache'
+const STAGES_CACHE_TIMESTAMP_KEY = 'crm_stages_cache_timestamp'
+const FIELDS_CACHE_KEY = 'crm_fields_cache'
+const FIELDS_CACHE_TIMESTAMP_KEY = 'crm_fields_cache_timestamp'
+const GROUPS_CACHE_KEY = 'crm_groups_cache'
+const GROUPS_CACHE_TIMESTAMP_KEY = 'crm_groups_cache_timestamp'
+const CACHE_TTL_MS = 10 * 60 * 1000 // 10 минут (эти данные меняются реже)
+
+// Функции для работы с localStorage кэшем
+function getCachedStages(): KanbanStage[] | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const cached = localStorage.getItem(STAGES_CACHE_KEY)
+    const timestamp = localStorage.getItem(STAGES_CACHE_TIMESTAMP_KEY)
+    if (!cached || !timestamp) return null
+    const age = Date.now() - parseInt(timestamp, 10)
+    if (age > CACHE_TTL_MS) {
+      localStorage.removeItem(STAGES_CACHE_KEY)
+      localStorage.removeItem(STAGES_CACHE_TIMESTAMP_KEY)
+      return null
+    }
+    return JSON.parse(cached) as KanbanStage[]
+  } catch (error) {
+    console.error('Error reading stages cache:', error)
+    return null
+  }
+}
+
+function setCachedStages(stages: KanbanStage[]): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(STAGES_CACHE_KEY, JSON.stringify(stages))
+    localStorage.setItem(STAGES_CACHE_TIMESTAMP_KEY, Date.now().toString())
+  } catch (error) {
+    console.error('Error saving stages cache:', error)
+  }
+}
+
+function clearStagesCache(): void {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem(STAGES_CACHE_KEY)
+  localStorage.removeItem(STAGES_CACHE_TIMESTAMP_KEY)
+}
+
+function getCachedFields(): CustomField[] | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const cached = localStorage.getItem(FIELDS_CACHE_KEY)
+    const timestamp = localStorage.getItem(FIELDS_CACHE_TIMESTAMP_KEY)
+    if (!cached || !timestamp) return null
+    const age = Date.now() - parseInt(timestamp, 10)
+    if (age > CACHE_TTL_MS) {
+      localStorage.removeItem(FIELDS_CACHE_KEY)
+      localStorage.removeItem(FIELDS_CACHE_TIMESTAMP_KEY)
+      return null
+    }
+    return JSON.parse(cached) as CustomField[]
+  } catch (error) {
+    console.error('Error reading fields cache:', error)
+    return null
+  }
+}
+
+function setCachedFields(fields: CustomField[]): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(FIELDS_CACHE_KEY, JSON.stringify(fields))
+    localStorage.setItem(FIELDS_CACHE_TIMESTAMP_KEY, Date.now().toString())
+  } catch (error) {
+    console.error('Error saving fields cache:', error)
+  }
+}
+
+function clearFieldsCache(): void {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem(FIELDS_CACHE_KEY)
+  localStorage.removeItem(FIELDS_CACHE_TIMESTAMP_KEY)
+}
+
+function getCachedGroups(): FieldGroup[] | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const cached = localStorage.getItem(GROUPS_CACHE_KEY)
+    const timestamp = localStorage.getItem(GROUPS_CACHE_TIMESTAMP_KEY)
+    if (!cached || !timestamp) return null
+    const age = Date.now() - parseInt(timestamp, 10)
+    if (age > CACHE_TTL_MS) {
+      localStorage.removeItem(GROUPS_CACHE_KEY)
+      localStorage.removeItem(GROUPS_CACHE_TIMESTAMP_KEY)
+      return null
+    }
+    return JSON.parse(cached) as FieldGroup[]
+  } catch (error) {
+    console.error('Error reading groups cache:', error)
+    return null
+  }
+}
+
+function setCachedGroups(groups: FieldGroup[]): void {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(GROUPS_CACHE_KEY, JSON.stringify(groups))
+    localStorage.setItem(GROUPS_CACHE_TIMESTAMP_KEY, Date.now().toString())
+  } catch (error) {
+    console.error('Error saving groups cache:', error)
+  }
+}
+
+function clearGroupsCache(): void {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem(GROUPS_CACHE_KEY)
+  localStorage.removeItem(GROUPS_CACHE_TIMESTAMP_KEY)
+}
+
 // Default field groups
 export const DEFAULT_FIELD_GROUPS: FieldGroup[] = [
   { id: "basic", name: "Основное", order: 0 },
@@ -115,6 +229,28 @@ function mapKanbanStageToDb(stage: KanbanStage): any {
 
 // Kanban Stages Functions
 export async function getKanbanStages(): Promise<KanbanStage[]> {
+  // Сначала проверяем кэш
+  const cached = getCachedStages()
+  if (cached) {
+    // Возвращаем кэшированные данные сразу, но продолжаем обновление в фоне
+    setTimeout(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('kanban_stages')
+          .select('*')
+          .order('order_num', { ascending: true })
+
+        if (!error && data && data.length > 0) {
+          const mapped = data.map(mapDbToKanbanStage)
+          setCachedStages(mapped)
+        }
+      } catch (error) {
+        console.error('Error refreshing stages cache:', error)
+      }
+    }, 0)
+    return cached
+  }
+
   try {
     const { data, error } = await supabase
       .from('kanban_stages')
@@ -139,11 +275,14 @@ export async function getKanbanStages(): Promise<KanbanStage[]> {
         return []
       }
 
-      // Return default stages after insertion
+      // Сохраняем в кэш и возвращаем
+      setCachedStages(DEFAULT_STAGES)
       return DEFAULT_STAGES
     }
 
-    return data.map(mapDbToKanbanStage)
+    const mapped = data.map(mapDbToKanbanStage)
+    setCachedStages(mapped)
+    return mapped
   } catch (error) {
     console.error('Error fetching kanban stages:', error)
     return []
@@ -192,6 +331,9 @@ export async function saveKanbanStages(stages: KanbanStage[]): Promise<void> {
         console.error(`Error upserting stage ${stage.id}:`, error)
       }
     }
+
+    // Обновляем кэш
+    setCachedStages(stages)
   } catch (error) {
     console.error('Error saving kanban stages:', error)
   }
@@ -199,6 +341,28 @@ export async function saveKanbanStages(stages: KanbanStage[]): Promise<void> {
 
 // Custom Fields Functions
 export async function getCustomFields(): Promise<CustomField[]> {
+  // Сначала проверяем кэш
+  const cached = getCachedFields()
+  if (cached) {
+    // Возвращаем кэшированные данные сразу, но продолжаем обновление в фоне
+    setTimeout(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('kanban_custom_fields')
+          .select('*')
+          .order('id', { ascending: true })
+
+        if (!error && data && data.length > 0) {
+          const mapped = data.map(mapDbToCustomField)
+          setCachedFields(mapped)
+        }
+      } catch (error) {
+        console.error('Error refreshing fields cache:', error)
+      }
+    }, 0)
+    return cached
+  }
+
   try {
     const { data, error } = await supabase
       .from('kanban_custom_fields')
@@ -207,17 +371,25 @@ export async function getCustomFields(): Promise<CustomField[]> {
 
     if (error) {
       console.error('Error fetching custom fields:', error)
-      return DEFAULT_CUSTOM_FIELDS
+      const defaults = DEFAULT_CUSTOM_FIELDS
+      setCachedFields(defaults)
+      return defaults
     }
 
     if (!data || data.length === 0) {
-      return DEFAULT_CUSTOM_FIELDS
+      const defaults = DEFAULT_CUSTOM_FIELDS
+      setCachedFields(defaults)
+      return defaults
     }
 
-    return data.map(mapDbToCustomField)
+    const mapped = data.map(mapDbToCustomField)
+    setCachedFields(mapped)
+    return mapped
   } catch (error) {
     console.error('Error fetching custom fields:', error)
-    return DEFAULT_CUSTOM_FIELDS
+    const defaults = DEFAULT_CUSTOM_FIELDS
+    setCachedFields(defaults)
+    return defaults
   }
 }
 
@@ -233,7 +405,11 @@ export async function saveCustomFields(fields: CustomField[]): Promise<void> {
 
     if (error) {
       console.error('Error saving custom fields:', error)
+      return
     }
+
+    // Обновляем кэш
+    setCachedFields(fields)
   } catch (error) {
     console.error('Error saving custom fields:', error)
   }
@@ -241,6 +417,28 @@ export async function saveCustomFields(fields: CustomField[]): Promise<void> {
 
 // Field Groups Functions
 export async function getFieldGroups(): Promise<FieldGroup[]> {
+  // Сначала проверяем кэш
+  const cached = getCachedGroups()
+  if (cached) {
+    // Возвращаем кэшированные данные сразу, но продолжаем обновление в фоне
+    setTimeout(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('kanban_field_groups')
+          .select('*')
+          .order('order_num', { ascending: true })
+
+        if (!error && data && data.length > 0) {
+          const mapped = data.map(mapDbToFieldGroup)
+          setCachedGroups(mapped)
+        }
+      } catch (error) {
+        console.error('Error refreshing groups cache:', error)
+      }
+    }, 0)
+    return cached
+  }
+
   try {
     const { data, error } = await supabase
       .from('kanban_field_groups')
@@ -249,17 +447,25 @@ export async function getFieldGroups(): Promise<FieldGroup[]> {
 
     if (error) {
       console.error('Error fetching field groups:', error)
-      return DEFAULT_FIELD_GROUPS
+      const defaults = DEFAULT_FIELD_GROUPS
+      setCachedGroups(defaults)
+      return defaults
     }
 
     if (!data || data.length === 0) {
-      return DEFAULT_FIELD_GROUPS
+      const defaults = DEFAULT_FIELD_GROUPS
+      setCachedGroups(defaults)
+      return defaults
     }
 
-    return data.map(mapDbToFieldGroup)
+    const mapped = data.map(mapDbToFieldGroup)
+    setCachedGroups(mapped)
+    return mapped
   } catch (error) {
     console.error('Error fetching field groups:', error)
-    return DEFAULT_FIELD_GROUPS
+    const defaults = DEFAULT_FIELD_GROUPS
+    setCachedGroups(defaults)
+    return defaults
   }
 }
 
@@ -275,7 +481,11 @@ export async function saveFieldGroups(groups: FieldGroup[]): Promise<void> {
 
     if (error) {
       console.error('Error saving field groups:', error)
+      return
     }
+
+    // Обновляем кэш
+    setCachedGroups(groups)
   } catch (error) {
     console.error('Error saving field groups:', error)
   }
