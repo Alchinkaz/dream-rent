@@ -1334,7 +1334,7 @@ function ContactDetailView({
     <div className="space-y-6">
       <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-muted group flex items-center justify-center">
         {formData.photo ? (
-          <img src={formData.photo || "/placeholder.svg"} alt={formData.name} className="w-full h-full object-cover" />
+          <img src={formData.photo || "/placeholder.svg"} alt={isNew ? "Новый контакт" : formData.name} className="w-full h-full object-cover" />
         ) : (
           <IconUser className="size-24 text-muted-foreground" />
         )}
@@ -1343,8 +1343,16 @@ function ContactDetailView({
       <div className="group">
         <input
           type="text"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          value={isNew && !formData.name ? "Новый контакт" : formData.name}
+          onChange={(e) => {
+            const value = e.target.value
+            if (value === "Новый контакт") {
+              setFormData({ ...formData, name: "" })
+            } else {
+              setFormData({ ...formData, name: value })
+            }
+          }}
+          placeholder="Новый контакт"
           className="w-full text-xl font-semibold bg-transparent border-none outline-none px-0"
         />
         <div className="h-px bg-border mt-1 group-hover:bg-foreground/20 transition-colors" />
@@ -1470,7 +1478,7 @@ function MopedDetailView({
         {formData.photo ? (
           <img
             src={formData.photo || "/placeholder.svg"}
-            alt={`${formData.brand} ${formData.model}`}
+            alt={isNew ? "Новый мопед" : `${formData.brand} ${formData.model}`}
             className="w-full h-full object-cover"
           />
         ) : (
@@ -1481,11 +1489,17 @@ function MopedDetailView({
       <div className="group">
         <input
           type="text"
-          value={`${formData.brand} ${formData.model}`}
+          value={isNew && !formData.brand && !formData.model ? "Новый мопед" : `${formData.brand} ${formData.model}`.trim() || "Новый мопед"}
           onChange={(e) => {
-            const parts = e.target.value.split(" ")
-            setFormData({ ...formData, brand: parts[0] || "", model: parts.slice(1).join(" ") || "" })
+            const value = e.target.value
+            if (value === "Новый мопед") {
+              setFormData({ ...formData, brand: "", model: "" })
+            } else {
+              const parts = value.split(" ")
+              setFormData({ ...formData, brand: parts[0] || "", model: parts.slice(1).join(" ") || "" })
+            }
           }}
+          placeholder="Новый мопед"
           className="w-full text-xl font-semibold bg-transparent border-none outline-none px-0"
         />
         <div className="h-px bg-border mt-1 group-hover:bg-foreground/20 transition-colors" />
