@@ -1107,6 +1107,7 @@ export function MopedsContent() {
   )
 }
 
+function ContactImageEditModal({
   open,
   onOpenChange,
   currentUrl,
