@@ -182,6 +182,11 @@ export function UsersContent() {
   }
 
   const handleTabPermissionChange = (section: string, tab: string, access: "view" | "edit" | "none", isEdit = false) => {
+    // Блокируем изменение прав на вкладки для дефолтного администратора
+    if (isEdit && editingUser?.email.toLowerCase() === "info@dreamrent.kz") {
+      return
+    }
+    
     const updateFn = (prev: FormState) => {
       const sectionPerms = prev.tabPermissions[section] || []
       const existingIndex = sectionPerms.findIndex((p) => p.tab === tab)
@@ -283,6 +288,11 @@ export function UsersContent() {
   }
 
   const handleEditPermissionToggle = (permission: AccessPermission) => {
+    // Блокируем изменение прав для дефолтного администратора
+    if (editingUser?.email.toLowerCase() === "info@dreamrent.kz") {
+      return
+    }
+    
     setEditForm((prev) => {
       const hasPermission = prev.permissions.includes(permission)
       const nextPermissions = hasPermission
