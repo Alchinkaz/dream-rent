@@ -68,6 +68,7 @@ import { getContacts, getCachedContacts, addContact, updateContact, deleteContac
 import { useToast } from "@/hooks/use-toast"
 import { getDeals, getCachedDeals, createDeal, updateDeal, deleteDeal } from "@/lib/deals-store"
 import { supabase } from "@/lib/supabase"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 // Define the missing constants
 const STATUS_LABELS = {
@@ -156,26 +157,28 @@ function KanbanColumn({
 
   const lightBackgroundColor = `${stage.color}15` // Add 15 (hex for ~8% opacity) to the color
 
+  const isMobile = useIsMobile()
+  
   return (
-    <div className="flex flex-col gap-3 min-w-[320px] rounded-lg p-4" style={{ backgroundColor: lightBackgroundColor }}>
+    <div className={`flex flex-col gap-3 ${isMobile ? 'w-full' : 'min-w-[320px]'} rounded-lg p-3 sm:p-4`} style={{ backgroundColor: lightBackgroundColor }}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2.5">
-          <h3 className="font-semibold text-base text-foreground">{stage.name}</h3>
+          <h3 className="font-semibold text-sm sm:text-base text-foreground">{stage.name}</h3>
         </div>
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 hover:bg-background/80"
+            className="h-7 w-7 sm:h-8 sm:w-8 hover:bg-background/80"
             onClick={() => onAddDeal(stage.id)}
             title="Добавить заявку"
           >
-            <IconPlus className="size-4" />
+            <IconPlus className="size-3 sm:size-4" />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-background/80" title="Настройки стадии">
-                <IconDotsVertical className="size-4" />
+              <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 hover:bg-background/80" title="Настройки стадии">
+                <IconDotsVertical className="size-3 sm:size-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -187,7 +190,7 @@ function KanbanColumn({
           </DropdownMenu>
         </div>
       </div>
-      <ScrollArea className="h-[calc(100vh-280px)]">
+      <ScrollArea className={isMobile ? "h-[400px]" : "h-[calc(100vh-280px)]"}>
         <SortableContext items={deals.map((d) => d.id)}>
           <div ref={setNodeRef} className="space-y-3 pb-4 min-h-[100px]">
             {deals.map((deal) => (
@@ -720,8 +723,8 @@ export function MopedsContent() {
 
   return (
     <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="border-b px-4 lg:px-6 mb-3">
-        <nav className="flex gap-6 overflow-x-auto" aria-label="Mopeds filter">
+      <div className="border-b px-2 sm:px-4 lg:px-6 mb-3">
+        <nav className="flex gap-4 sm:gap-6 overflow-x-auto scrollbar-hide" aria-label="Mopeds filter">
           {canAccessRentals && (
             <Link
               href="/mopeds/rentals"
@@ -756,8 +759,8 @@ export function MopedsContent() {
       </div>
 
       {activeFilter === "contacts" ? (
-        <div className="px-4 lg:px-6">
-          <div className="flex items-center gap-3 mb-4">
+        <div className="px-2 sm:px-4 lg:px-6">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 mb-4">
             <div className="relative flex-1">
               <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
@@ -770,12 +773,12 @@ export function MopedsContent() {
             {canEditContacts && (
               <Dialog open={isContactDialogOpen} onOpenChange={setIsContactDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={handleOpenAddContactDialog}>
+                  <Button onClick={handleOpenAddContactDialog} className="w-full sm:w-auto">
                     <IconPlus className="size-4 mr-2" />
                     Добавить клиента
                   </Button>
                 </DialogTrigger>
-              <DialogContent className="!max-w-4xl w-[85vw] max-h-[95vh] h-[95vh] overflow-hidden flex flex-col p-0">
+              <DialogContent className="!max-w-4xl w-[95vw] sm:w-[85vw] max-h-[95vh] h-[95vh] overflow-hidden flex flex-col p-0">
                 <ContactDetailModal
                   contact={editingContact}
                   contacts={contacts}
@@ -797,10 +800,10 @@ export function MopedsContent() {
               filteredContacts.map((contact) => (
                 <div
                   key={contact.id}
-                  className="flex items-center gap-4 px-4 py-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                  className="flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 sm:py-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
                   onClick={() => handleViewContact(contact)}
                 >
-                  <div className="size-12 rounded-full overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
+                  <div className="size-10 sm:size-12 rounded-full overflow-hidden bg-muted flex-shrink-0 flex items-center justify-center">
                     {(contact as any).photo ? (
                       <img
                         src={(contact as any).photo || "/placeholder.svg"}
@@ -808,29 +811,30 @@ export function MopedsContent() {
                         className="size-full object-cover"
                       />
                     ) : (
-                      <IconUser className="size-6 text-muted-foreground" />
+                      <IconUser className="size-5 sm:size-6 text-muted-foreground" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-base">{contact.name}</h3>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <h3 className="font-semibold text-sm sm:text-base truncate">{contact.name}</h3>
                       {contact.status && (
-                        <Badge variant={STATUS_VARIANTS[contact.status as keyof typeof STATUS_VARIANTS]}>
+                        <Badge variant={STATUS_VARIANTS[contact.status as keyof typeof STATUS_VARIANTS]} className="text-xs">
                           {STATUS_LABELS[contact.status as keyof typeof STATUS_LABELS]}
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">{contact.phone}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{contact.phone}</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                   {canEditContacts && (
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="h-8 w-8 sm:h-10 sm:w-10"
                       onClick={(e) => handleDeleteContact(contact.id, e)}
                       aria-label="Удалить"
                     >
-                      <IconTrash className="size-4 text-destructive" />
+                      <IconTrash className="size-3 sm:size-4 text-destructive" />
                     </Button>
                   )}
                   </div>
@@ -841,12 +845,12 @@ export function MopedsContent() {
           {/* Removed the old Dialog for view contact */}
         </div>
       ) : activeFilter === "inventory" ? (
-        <div className="px-4 lg:px-6">
+        <div className="px-2 sm:px-4 lg:px-6">
           <MopedsInventory />
         </div>
       ) : (
-        <div className="px-4 lg:px-6">
-          <div className="flex items-center justify-between gap-4 mb-4">
+        <div className="px-2 sm:px-4 lg:px-6">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 mb-4">
             <div className="relative flex-1">
               <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
@@ -856,19 +860,21 @@ export function MopedsContent() {
                 className="pl-9"
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" className="flex-1 sm:flex-initial">
                     {currentView === "kanban" ? (
                       <>
-                        <IconLayoutKanban className="size-4 mr-2" />
-                        Вид: Канбан
+                        <IconLayoutKanban className="size-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Вид: Канбан</span>
+                        <span className="sm:hidden">Канбан</span>
                       </>
                     ) : (
                       <>
-                        <IconTable className="size-4 mr-2" />
-                        Вид: Таблица
+                        <IconTable className="size-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Вид: Таблица</span>
+                        <span className="sm:hidden">Таблица</span>
                       </>
                     )}
                   </Button>
@@ -887,9 +893,9 @@ export function MopedsContent() {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <IconSettings className="size-4 mr-2" />
-                    Настройки
+                  <Button variant="outline" size="sm" className="flex-1 sm:flex-initial">
+                    <IconSettings className="size-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Настройки</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -905,9 +911,10 @@ export function MopedsContent() {
               </DropdownMenu>
 
               {canEditRentals && (
-                <Button size="sm" onClick={() => handleAddDealToStage(stages[0]?.id || "new")}>
-                  <IconPlus className="size-4" />
-                  Новая заявка
+                <Button size="sm" onClick={() => handleAddDealToStage(stages[0]?.id || "new")} className="flex-1 sm:flex-initial">
+                  <IconPlus className="size-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Новая заявка</span>
+                  <span className="sm:hidden">Добавить</span>
                 </Button>
               )}
             </div>
@@ -928,7 +935,7 @@ export function MopedsContent() {
               onDragEnd={handleDragEnd}
             >
               <ScrollArea className="w-full">
-                <div className="flex gap-4 pb-4">
+                <div className={`flex ${isMobile ? 'flex-col' : 'flex-row'} gap-4 pb-4`}>
                   <SortableContext items={stages.map((s) => s.id)} strategy={horizontalListSortingStrategy}>
                     {stages.length === 0 ? (
                       <div className="text-center py-12 text-muted-foreground">
@@ -954,8 +961,56 @@ export function MopedsContent() {
               </ScrollArea>
               <DragOverlay>{activeDeal ? <EnhancedDealCard deal={activeDeal} /> : null}</DragOverlay>
             </DndContext>
+          ) : isMobile ? (
+            // Мобильная версия - карточки
+            <div className="space-y-3">
+              {deals.map((deal) => {
+                const stage = stages.find((s) => s.id === deal.stage)
+                return (
+                  <div
+                    key={deal.id}
+                    className="rounded-lg border p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => handleCardClick(deal)}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm truncate">{deal.clientName}</h3>
+                        <p className="text-xs text-muted-foreground">{deal.phone}</p>
+                      </div>
+                      {stage && (
+                        <Badge
+                          variant="outline"
+                          className="text-xs flex-shrink-0"
+                          style={{ backgroundColor: stage.color, color: "white", borderColor: stage.color }}
+                        >
+                          {stage.name}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {deal.status && (
+                        <Badge variant="outline" className="text-xs">{deal.status}</Badge>
+                      )}
+                      {deal.priority && (
+                        <Badge variant="outline" className="text-xs">{deal.priority}</Badge>
+                      )}
+                      {deal.moped && (
+                        <span className="text-xs text-muted-foreground">Мопед: {deal.moped}</span>
+                      )}
+                      {deal.amount && (
+                        <span className="text-xs text-muted-foreground">Сумма: {deal.amount}</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-2">
+                      {new Date(deal.createdAt).toLocaleDateString("ru-RU")}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           ) : (
-            <div className="rounded-lg border">
+            // Десктопная версия - таблица
+            <div className="rounded-lg border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
