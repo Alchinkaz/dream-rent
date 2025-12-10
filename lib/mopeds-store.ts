@@ -21,6 +21,11 @@ export type Moped = {
 const CACHE_KEY = 'crm_mopeds_cache'
 const CACHE_TIMESTAMP_KEY = 'crm_mopeds_cache_timestamp'
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 минут
+const MAX_CACHE_SIZE_BYTES = 3 * 1024 * 1024 // 3MB лимит (более консервативный)
+const MAX_CACHE_ITEMS = 500 // Максимум записей в кэше
+
+// Флаг для логирования предупреждения только один раз за сессию
+let hasLoggedCacheWarning = false
 
 // Simple in-memory cache to avoid repeated full fetches per card/modal
 let mopedCache: Map<string, Moped> | null = null
@@ -52,41 +57,77 @@ export function getCachedMopeds(): Moped[] | null {
   }
 }
 
+// Создает облегченную версию мопеда без фото для кэширования
+function createLightweightMoped(moped: Moped): Omit<Moped, 'photo'> & { photo?: never } {
+  const { photo, ...rest } = moped
+  return rest
+}
+
 function setCachedMopeds(mopeds: Moped[]): void {
   if (typeof window === 'undefined') return
   
   try {
-    // Ограничиваем размер данных для кэша (максимум 1000 записей)
-    const limitedMopeds = mopeds.slice(0, 1000)
-    const dataToStore = JSON.stringify(limitedMopeds)
+    // Ограничиваем количество записей
+    const limitedMopeds = mopeds.slice(0, MAX_CACHE_ITEMS)
     
-    // Проверяем размер данных (localStorage обычно имеет лимит ~5-10MB)
-    if (dataToStore.length > 4 * 1024 * 1024) { // 4MB лимит
-      console.warn('Mopeds cache too large, skipping cache save')
-      return
+    // Сначала пробуем сохранить полные данные
+    let dataToStore = JSON.stringify(limitedMopeds)
+    const sizeInBytes = new Blob([dataToStore]).size
+    
+    // Если данные слишком большие, создаем облегченную версию без фото
+    if (sizeInBytes > MAX_CACHE_SIZE_BYTES) {
+      const lightweightMopeds = limitedMopeds.map(createLightweightMoped)
+      dataToStore = JSON.stringify(lightweightMopeds)
+      const lightweightSize = new Blob([dataToStore]).size
+      
+      // Если облегченная версия тоже слишком большая, уменьшаем количество записей
+      if (lightweightSize > MAX_CACHE_SIZE_BYTES) {
+        // Пробуем сохранить только первые 200 записей без фото
+        const furtherLimited = mopeds.slice(0, 200).map(createLightweightMoped)
+        dataToStore = JSON.stringify(furtherLimited)
+        const finalSize = new Blob([dataToStore]).size
+        
+        if (finalSize > MAX_CACHE_SIZE_BYTES) {
+          // Если даже это не помещается, просто не сохраняем кэш
+          // Логируем предупреждение только один раз за сессию
+          if (!hasLoggedCacheWarning) {
+            console.warn('Mopeds cache too large, skipping cache save. Data will be fetched from server.')
+            hasLoggedCacheWarning = true
+          }
+          return
+        }
+      }
     }
     
     localStorage.setItem(CACHE_KEY, dataToStore)
     localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString())
   } catch (error: any) {
-    // Если ошибка QuotaExceededError, очищаем старый кэш и пробуем снова с ограниченными данными
+    // Если ошибка QuotaExceededError, очищаем старый кэш и пробуем снова с облегченными данными
     if (error?.name === 'QuotaExceededError' || error?.message?.includes('quota')) {
-      console.warn('localStorage quota exceeded, clearing old cache')
+      if (!hasLoggedCacheWarning) {
+        console.warn('localStorage quota exceeded, clearing old cache and retrying with lightweight data')
+        hasLoggedCacheWarning = true
+      }
       try {
         localStorage.removeItem(CACHE_KEY)
         localStorage.removeItem(CACHE_TIMESTAMP_KEY)
-        // Пробуем сохранить только первые 500 записей
-        const limitedMopeds = mopeds.slice(0, 500)
+        // Пробуем сохранить только первые 200 записей без фото
+        const limitedMopeds = mopeds.slice(0, 200).map(createLightweightMoped)
         const dataToStore = JSON.stringify(limitedMopeds)
-        if (dataToStore.length < 4 * 1024 * 1024) {
+        const sizeInBytes = new Blob([dataToStore]).size
+        if (sizeInBytes < MAX_CACHE_SIZE_BYTES) {
           localStorage.setItem(CACHE_KEY, dataToStore)
           localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString())
         }
       } catch (retryError) {
-        console.error('Error retrying mopeds cache save:', retryError)
+        // Тихая ошибка - не логируем повторно
       }
     } else {
-      console.error('Error saving mopeds cache:', error)
+      // Логируем только неожиданные ошибки
+      if (!hasLoggedCacheWarning) {
+        console.error('Error saving mopeds cache:', error)
+        hasLoggedCacheWarning = true
+      }
     }
   }
 }
