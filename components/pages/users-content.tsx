@@ -601,28 +601,65 @@ export function UsersContent() {
 
             <div className="space-y-2">
               <Label>Доступы к разделам</Label>
-              <div className="grid grid-cols-2 gap-2 rounded-lg border p-3 max-h-[200px] overflow-y-auto">
-                {MAIN_PERMISSIONS.map((permission) => (
-                  <label key={permission} className="flex items-center gap-2 text-sm cursor-pointer">
-                    <Checkbox
-                      checked={editForm.permissions.includes(permission)}
-                      onCheckedChange={() => handleEditPermissionToggle(permission)}
-                    />
-                    <span>{PERMISSION_LABELS[permission]}</span>
-                  </label>
-                ))}
-              </div>
+              {editingUser?.email.toLowerCase() === "info@dreamrent.kz" ? (
+                <div className="rounded-lg border p-3 bg-muted/50">
+                  <p className="text-sm text-muted-foreground mb-2">Все права защищены для дефолтного администратора</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {MAIN_PERMISSIONS.map((permission) => (
+                      <div key={permission} className="flex items-center gap-2 text-sm">
+                        <Checkbox checked={true} disabled />
+                        <span className="text-muted-foreground">{PERMISSION_LABELS[permission]}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 rounded-lg border p-3 max-h-[200px] overflow-y-auto">
+                  {MAIN_PERMISSIONS.map((permission) => (
+                    <label key={permission} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={editForm.permissions.includes(permission)}
+                        onCheckedChange={() => handleEditPermissionToggle(permission)}
+                      />
+                      <span>{PERMISSION_LABELS[permission]}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label>Права на вкладки разделов</Label>
-              <div className="space-y-2">
-                {(Object.keys(SECTION_TABS) as SectionWithTabs[]).map((section) => 
-                  renderSectionTabs(section, true)
-                )}
-              </div>
-              {editForm.permissions.filter(p => ['mopeds', 'cars', 'motorcycles', 'apartments'].includes(p)).length === 0 && (
-                <p className="text-xs text-muted-foreground">Выберите разделы с вкладками выше</p>
+              {editingUser?.email.toLowerCase() === "info@dreamrent.kz" ? (
+                <div className="rounded-lg border p-3 bg-muted/50">
+                  <p className="text-sm text-muted-foreground mb-3">Все права на вкладки защищены - установлено "Редактирование" для всех разделов</p>
+                  {(Object.keys(SECTION_TABS) as SectionWithTabs[]).map((section) => {
+                    const tabs = SECTION_TABS[section]
+                    return (
+                      <div key={section} className="mb-3 last:mb-0">
+                        <div className="font-medium text-sm mb-2">{SECTION_LABELS[section]}</div>
+                        <div className="pl-4 space-y-1">
+                          {tabs.map((tab) => (
+                            <div key={tab} className="text-xs text-muted-foreground">
+                              {TAB_LABELS[tab]}: <span className="font-medium">Редактирование</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    {(Object.keys(SECTION_TABS) as SectionWithTabs[]).map((section) => 
+                      renderSectionTabs(section, true)
+                    )}
+                  </div>
+                  {editForm.permissions.filter(p => ['mopeds', 'cars', 'motorcycles', 'apartments'].includes(p)).length === 0 && (
+                    <p className="text-xs text-muted-foreground">Выберите разделы с вкладками выше</p>
+                  )}
+                </>
               )}
             </div>
 
