@@ -24,6 +24,7 @@ import { getCustomFields, getFieldGroups, getKanbanStages } from "@/lib/crm-fiel
 import { getContacts, addContact, findContactByNameOrPhone, type Contact } from "@/lib/contacts-store"
 import { getMopedByIdCached, getMopeds, type Moped } from "@/lib/mopeds-store"
 import { useAuth } from "@/lib/auth"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 type DealDetailModalProps = {
   open: boolean
@@ -71,6 +72,7 @@ export function DealDetailModal({
   initialContacts,
 }: DealDetailModalProps) {
   const { username } = useAuth() // Get authenticated user from auth context
+  const isMobile = useIsMobile()
   const [customFields, setCustomFields] = React.useState<CustomField[]>([])
   const [fieldGroups, setFieldGroups] = React.useState<FieldGroup[]>([])
   const [stages, setStages] = React.useState<KanbanStage[]>([])
@@ -615,7 +617,7 @@ export function DealDetailModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="!max-w-4xl w-[85vw] max-h-[95vh] h-[95vh] overflow-hidden flex flex-col p-0">
+        <DialogContent className={`!max-w-4xl ${isMobile ? 'w-[100vw] h-[100vh] max-h-[100vh]' : 'w-[85vw] max-h-[95vh] h-[95vh]'} overflow-hidden flex flex-col p-0 m-0 ${isMobile ? 'rounded-none' : ''}`}>
           <div className="flex flex-col gap-6 p-8 pb-6 border-b shrink-0">
             <div className="flex items-center gap-3 group">
               <div className="relative pb-1">
@@ -629,14 +631,14 @@ export function DealDetailModal({
                         setIsEditingName(false)
                       }
                     }}
-                    className="!text-3xl font-bold border-none shadow-none bg-transparent p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
-                    style={{ fontSize: "1.875rem", lineHeight: "2.25rem" }}
+                    className={`!font-bold border-none shadow-none bg-transparent p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0 ${isMobile ? 'text-xl' : 'text-3xl'}`}
+                    style={isMobile ? { fontSize: "1.25rem", lineHeight: "1.75rem" } : { fontSize: "1.875rem", lineHeight: "2.25rem" }}
                     autoFocus
                     placeholder="Введите название сделки"
                   />
                 ) : (
                   <h1
-                    className="text-3xl font-bold cursor-text transition-colors"
+                    className={`${isMobile ? 'text-xl' : 'text-3xl'} font-bold cursor-text transition-colors`}
                     onClick={() => setIsEditingName(true)}
                   >
                     {editedDeal.clientName || "Нажмите для добавления названия"}
@@ -685,8 +687,8 @@ export function DealDetailModal({
               <Progress value={progressPercentage} className="h-2" />
             </div>
 
-            <div className="border-b -mb-6 -mx-8 px-8">
-              <nav className="flex gap-6" aria-label="Deal sections">
+            <div className={`border-b ${isMobile ? '-mb-4 -mx-4 px-4' : '-mb-6 -mx-8 px-8'}`}>
+              <nav className={`flex ${isMobile ? 'gap-4' : 'gap-6'} overflow-x-auto scrollbar-hide`} aria-label="Deal sections">
                 <button
                   onClick={() => setActiveTab("main")}
                   className={`text-muted-foreground hover:text-foreground relative whitespace-nowrap border-b-2 text-sm font-medium transition-colors pb-3.5 ${
@@ -708,10 +710,10 @@ export function DealDetailModal({
           </div>
 
           <ScrollArea className="flex-1 overflow-y-auto">
-            <div className="px-8 py-6">
+            <div className={`${isMobile ? 'px-4 py-4' : 'px-8 py-6'}`}>
               {activeTab === "main" ? (
                 <div className="space-y-1">
-                  <div className="grid grid-cols-[180px_1fr] items-center gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2">
+                  <div className={`${isMobile ? 'flex flex-col gap-2' : 'grid grid-cols-[180px_1fr]'} items-${isMobile ? 'start' : 'center'} gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2`}>
                     <div className="text-sm text-muted-foreground hover:underline cursor-pointer">Ответственный</div>
                     <div className="flex items-center gap-2">
                       <Avatar className="size-6">
@@ -722,7 +724,7 @@ export function DealDetailModal({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-[180px_1fr] items-center gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2">
+                  <div className={`${isMobile ? 'flex flex-col gap-2' : 'grid grid-cols-[180px_1fr]'} items-${isMobile ? 'start' : 'center'} gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2`}>
                     <div className="text-sm text-muted-foreground">Мопед</div>
                     <div>
                       {savedMoped ? (
@@ -814,7 +816,7 @@ export function DealDetailModal({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-[180px_1fr] items-center gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2">
+                  <div className={`${isMobile ? 'flex flex-col gap-2' : 'grid grid-cols-[180px_1fr]'} items-${isMobile ? 'start' : 'center'} gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2`}>
                     <div className="text-sm text-muted-foreground">Основной Контакт</div>
                     <div>
                       {savedContact ? (
@@ -902,7 +904,7 @@ export function DealDetailModal({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-[180px_1fr] items-center gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2">
+                  <div className={`${isMobile ? 'flex flex-col gap-2' : 'grid grid-cols-[180px_1fr]'} items-${isMobile ? 'start' : 'center'} gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2`}>
                     <div className="text-sm text-muted-foreground">Экстренный Контакт</div>
                     <div>
                       {savedEmergencyContact ? (
@@ -990,7 +992,7 @@ export function DealDetailModal({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-[180px_1fr] items-center gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2">
+                  <div className={`${isMobile ? 'flex flex-col gap-2' : 'grid grid-cols-[180px_1fr]'} items-${isMobile ? 'start' : 'center'} gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2`}>
                     <div className="text-sm text-muted-foreground hover:underline cursor-pointer">Дата аренды</div>
                     <div className="flex items-center gap-1">
                       <Popover>
@@ -1043,7 +1045,7 @@ export function DealDetailModal({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-[180px_1fr] items-center gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2">
+                  <div className={`${isMobile ? 'flex flex-col gap-2' : 'grid grid-cols-[180px_1fr]'} items-${isMobile ? 'start' : 'center'} gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2`}>
                     <div className="text-sm text-muted-foreground hover:underline cursor-pointer">Общая Сумма</div>
                     <div>
                       <Input
@@ -1055,7 +1057,7 @@ export function DealDetailModal({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-[180px_1fr] items-center gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2">
+                  <div className={`${isMobile ? 'flex flex-col gap-2' : 'grid grid-cols-[180px_1fr]'} items-${isMobile ? 'start' : 'center'} gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2`}>
                     <div className="text-sm text-muted-foreground hover:underline cursor-pointer">Вид оплаты</div>
                     <div>
                       <Select
@@ -1073,7 +1075,7 @@ export function DealDetailModal({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-[180px_1fr] items-center gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2">
+                  <div className={`${isMobile ? 'flex flex-col gap-2' : 'grid grid-cols-[180px_1fr]'} items-${isMobile ? 'start' : 'center'} gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2`}>
                     <div className="text-sm text-muted-foreground hover:underline cursor-pointer">Цена за сутки</div>
                     <div>
                       <Input
@@ -1085,7 +1087,7 @@ export function DealDetailModal({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-[180px_1fr] items-center gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2">
+                  <div className={`${isMobile ? 'flex flex-col gap-2' : 'grid grid-cols-[180px_1fr]'} items-${isMobile ? 'start' : 'center'} gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2`}>
                     <div className="text-sm text-muted-foreground hover:underline cursor-pointer">Сумма страховки</div>
                     <div>
                       <Input
@@ -1097,7 +1099,7 @@ export function DealDetailModal({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-[180px_1fr] items-center gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2">
+                  <div className={`${isMobile ? 'flex flex-col gap-2' : 'grid grid-cols-[180px_1fr]'} items-${isMobile ? 'start' : 'center'} gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2`}>
                     <div className="text-sm text-muted-foreground">Источник</div>
                     <div>
                       <Select
@@ -1120,7 +1122,7 @@ export function DealDetailModal({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-[180px_1fr] items-center gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2">
+                  <div className={`${isMobile ? 'flex flex-col gap-2' : 'grid grid-cols-[180px_1fr]'} items-${isMobile ? 'start' : 'center'} gap-4 py-2 hover:bg-muted/50 rounded-md px-2 -mx-2`}>
                     <div className="text-sm text-muted-foreground">Комментарий</div>
                     <div>
                       <Input
@@ -1162,7 +1164,7 @@ export function DealDetailModal({
 
       {viewingContactModal && (
         <Dialog open={isContactDetailOpen} onOpenChange={setIsContactDetailOpen}>
-          <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto scrollbar-hide" hideClose>
+          <DialogContent className={`${isMobile ? 'w-[100vw] h-[100vh] max-h-[100vh] m-0 rounded-none' : 'sm:max-w-[500px]'} max-h-[85vh] overflow-y-auto scrollbar-hide`} hideClose>
             <ContactDetailView
               contact={viewingContactModal}
               onSave={handleSaveContactFromModal}
@@ -1174,7 +1176,7 @@ export function DealDetailModal({
 
       {viewingMopedModal && (
         <Dialog open={isMopedDetailOpen} onOpenChange={setIsMopedDetailOpen}>
-          <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto scrollbar-hide" hideClose>
+          <DialogContent className={`${isMobile ? 'w-[100vw] h-[100vh] max-h-[100vh] m-0 rounded-none' : 'sm:max-w-[500px]'} max-h-[85vh] overflow-y-auto scrollbar-hide`} hideClose>
             <MopedDetailView
               moped={viewingMopedModal}
               onSave={handleSaveMopedFromModal}
