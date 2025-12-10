@@ -56,10 +56,38 @@ function setCachedMopeds(mopeds: Moped[]): void {
   if (typeof window === 'undefined') return
   
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(mopeds))
+    // Ограничиваем размер данных для кэша (максимум 1000 записей)
+    const limitedMopeds = mopeds.slice(0, 1000)
+    const dataToStore = JSON.stringify(limitedMopeds)
+    
+    // Проверяем размер данных (localStorage обычно имеет лимит ~5-10MB)
+    if (dataToStore.length > 4 * 1024 * 1024) { // 4MB лимит
+      console.warn('Mopeds cache too large, skipping cache save')
+      return
+    }
+    
+    localStorage.setItem(CACHE_KEY, dataToStore)
     localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString())
-  } catch (error) {
-    console.error('Error saving mopeds cache:', error)
+  } catch (error: any) {
+    // Если ошибка QuotaExceededError, очищаем старый кэш и пробуем снова с ограниченными данными
+    if (error?.name === 'QuotaExceededError' || error?.message?.includes('quota')) {
+      console.warn('localStorage quota exceeded, clearing old cache')
+      try {
+        localStorage.removeItem(CACHE_KEY)
+        localStorage.removeItem(CACHE_TIMESTAMP_KEY)
+        // Пробуем сохранить только первые 500 записей
+        const limitedMopeds = mopeds.slice(0, 500)
+        const dataToStore = JSON.stringify(limitedMopeds)
+        if (dataToStore.length < 4 * 1024 * 1024) {
+          localStorage.setItem(CACHE_KEY, dataToStore)
+          localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString())
+        }
+      } catch (retryError) {
+        console.error('Error retrying mopeds cache save:', retryError)
+      }
+    } else {
+      console.error('Error saving mopeds cache:', error)
+    }
   }
 }
 

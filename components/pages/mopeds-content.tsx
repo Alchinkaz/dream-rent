@@ -212,6 +212,7 @@ export function MopedsContent() {
   const pathname = usePathname()
   const router = useRouter()
   const { hasTabAccess, username } = useAuth()
+  const isMobile = useIsMobile()
   
   // Определяем активную вкладку из URL
   const getActiveTab = (): "rentals" | "inventory" | "contacts" | null => {
