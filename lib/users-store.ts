@@ -532,13 +532,14 @@ export async function addUser(newUser: Omit<AppUser, "id" | "createdAt" | "role"
     }
 
     const user = mapDbToUser(data)
+    const userWithAllPermissions = ensureAdminHasAllPermissions(user)
     clearUsersCache()
     
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event("users-updated"))
     }
     
-    return { user }
+    return { user: userWithAllPermissions }
   } catch (error) {
     console.error('Error adding user:', error)
     return { error: "Ошибка при добавлении пользователя" }
@@ -606,13 +607,14 @@ export async function updateUser(id: string, updates: Partial<Omit<AppUser, "id"
     }
 
     const updated = mapDbToUser(data)
+    const updatedWithAllPermissions = ensureAdminHasAllPermissions(updated)
     clearUsersCache()
     
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event("users-updated"))
     }
     
-    return { user: updated }
+    return { user: updatedWithAllPermissions }
   } catch (error) {
     console.error('Error updating user:', error)
     return { error: "Ошибка при обновлении пользователя" }
