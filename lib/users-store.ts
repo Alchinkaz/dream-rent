@@ -504,11 +504,16 @@ export async function addUser(newUser: Omit<AppUser, "id" | "createdAt" | "role"
       return { error: "Пользователь с таким email уже существует" }
     }
 
+    // Если это дефолтный администратор, автоматически устанавливаем все права
+    const isDefaultAdmin = normalizedEmail === normalizeEmail(DEFAULT_ADMIN_EMAIL)
+    const finalPermissions = isDefaultAdmin ? ALL_PERMISSIONS : (newUser.permissions || [])
+    const finalTabPermissions = isDefaultAdmin ? ALL_TAB_PERMISSIONS : (newUser.tabPermissions || {})
+
     const dbUser = mapUserToDb({
       ...newUser,
       email: normalizedEmail,
-      permissions: newUser.permissions || [],
-      tabPermissions: newUser.tabPermissions || {},
+      permissions: finalPermissions,
+      tabPermissions: finalTabPermissions,
     })
     
     const { data, error } = await supabase
