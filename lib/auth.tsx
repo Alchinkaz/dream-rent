@@ -22,7 +22,7 @@ type AuthContextType = {
   isAdmin: boolean
   hasPermission: (permission: string) => boolean
   hasTabAccess: (section: string, tab: string, level: "view" | "edit") => boolean
-  login: (email: string, password: string) => boolean
+  login: (email: string, password: string) => Promise<boolean>
   logout: () => void
 }
 
@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const hydrateUser = () => {
+    const hydrateUser = async () => {
       const authStatus = localStorage.getItem("isAuthenticated")
       const currentUserId = getCurrentUserMarker()
       let current = getUserById(currentUserId)
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (authStatus === "true" && !current) {
         // Попробуем найти админа по умолчанию
         const adminEmail = "info@dreamrent.kz"
-        const users = getUsers()
+        const users = await getUsers()
         const normalizedAdminEmail = adminEmail.trim().toLowerCase()
         const adminUser = users.find((u) => u.email.trim().toLowerCase() === normalizedAdminEmail)
         if (adminUser) {
@@ -69,18 +69,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     hydrateUser()
-    const handler = () => hydrateUser()
+    const handler = () => {
+      hydrateUser()
+    }
     if (typeof window !== "undefined") {
       window.addEventListener("users-updated", handler)
       return () => window.removeEventListener("users-updated", handler)
     }
   }, [])
 
-  const login = (email: string, password: string) => {
+  const login = async (email: string, password: string) => {
     const trimmedEmail = email.trim().toLowerCase()
     const trimmedPassword = password.trim()
 
-    const found = findUserByCredentials(trimmedEmail, trimmedPassword)
+    const found = await findUserByCredentials(trimmedEmail, trimmedPassword)
     if (found) {
       localStorage.setItem("isAuthenticated", "true")
       setCurrentUserMarker(found.id)

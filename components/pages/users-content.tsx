@@ -68,10 +68,15 @@ export function UsersContent() {
   const [success, setSuccess] = useState<string>("")
 
   useEffect(() => {
-    const load = () => setUsers(getUsers())
+    const load = async () => {
+      const usersList = await getUsers()
+      setUsers(usersList)
+    }
     load()
 
-    const handler = () => load()
+    const handler = () => {
+      load()
+    }
     if (typeof window !== "undefined") {
       window.addEventListener("users-updated", handler)
       return () => window.removeEventListener("users-updated", handler)
@@ -89,7 +94,7 @@ export function UsersContent() {
     })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setSuccess("")
@@ -99,7 +104,7 @@ export function UsersContent() {
       return
     }
 
-    const { error: addError } = addUser({
+    const { error: addError, user } = await addUser({
       name: form.name.trim(),
       email: form.email.trim(),
       password: form.password.trim(),
@@ -115,7 +120,8 @@ export function UsersContent() {
 
     setSuccess("Пользователь добавлен")
     resetForm()
-    setUsers(getUsers())
+    const usersList = await getUsers()
+    setUsers(usersList)
   }
 
   const handlePermissionToggle = (permission: AccessPermission) => {
@@ -174,19 +180,20 @@ export function UsersContent() {
     return tabPerm?.access || "none"
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     const target = users.find((u) => u.id === id)
     if (!target) return
     if (target.email === currentUser?.email) {
       setError("Нельзя удалить себя")
       return
     }
-    const result = deleteUser(id)
+    const result = await deleteUser(id)
     if (!result.success && result.error) {
       setError(result.error)
       return
     }
-    setUsers(getUsers())
+    const usersList = await getUsers()
+    setUsers(usersList)
   }
 
   const adminOnly = useMemo(

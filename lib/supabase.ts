@@ -533,6 +533,41 @@ export type Database = {
           created_at?: string
         }
       }
+      users: {
+        Row: {
+          id: string
+          name: string
+          email: string
+          password: string
+          role: 'admin' | 'manager' | 'viewer'
+          permissions: any
+          tab_permissions: any
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          email: string
+          password: string
+          role: 'admin' | 'manager' | 'viewer'
+          permissions?: any
+          tab_permissions?: any
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          email?: string
+          password?: string
+          role?: 'admin' | 'manager' | 'viewer'
+          permissions?: any
+          tab_permissions?: any
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }

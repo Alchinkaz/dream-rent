@@ -57,6 +57,7 @@ const { data, error } = await supabaseAdmin.from('deals').select('*')
 - `document_templates` - Шаблоны документов
 - `warehouses` - Склады
 - `resources` - Ресурсы
+- `users` - Пользователи системы
 - `departments` - Отделы
 - `employees` - Сотрудники
 - `counterparties` - Контрагенты

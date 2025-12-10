@@ -443,6 +443,43 @@ CREATE POLICY "Allow all access to counterparty_contacts" ON counterparty_contac
     FOR ALL USING (true) WITH CHECK (true);
 
 -- =====================================================
+-- 15. ПОЛЬЗОВАТЕЛИ (Users)
+-- =====================================================
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('admin', 'manager', 'viewer')),
+    permissions JSONB DEFAULT '[]'::jsonb, -- Массив строк с разрешениями
+    tab_permissions JSONB DEFAULT '{}'::jsonb, -- Объект с правами на вкладки
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Индексы для users
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
+
+-- Вставка дефолтного администратора
+INSERT INTO users (id, name, email, password, role, permissions, tab_permissions) VALUES
+    ('admin-default', 'Администратор', 'info@dreamrent.kz', 'kyadr3thcxvsgxok)Rca', 'admin', 
+     '["dashboard", "finances", "motorcycles", "mopeds", "mopeds.rentals", "mopeds.inventory", "mopeds.contacts", "cars", "apartments", "clients", "projects", "settings", "help", "users"]'::jsonb,
+     '{"mopeds": [{"tab": "rentals", "access": "edit"}, {"tab": "inventory", "access": "edit"}, {"tab": "contacts", "access": "edit"}], "cars": [{"tab": "rentals", "access": "edit"}, {"tab": "inventory", "access": "edit"}, {"tab": "contacts", "access": "edit"}], "motorcycles": [{"tab": "rentals", "access": "edit"}, {"tab": "inventory", "access": "edit"}, {"tab": "contacts", "access": "edit"}], "apartments": [{"tab": "rentals", "access": "edit"}, {"tab": "inventory", "access": "edit"}, {"tab": "contacts", "access": "edit"}]}'::jsonb)
+ON CONFLICT (id) DO NOTHING;
+
+-- Триггер для автоматического обновления updated_at
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- RLS политика для users
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all access to users" ON users
+    FOR ALL USING (true) WITH CHECK (true);
+
+-- =====================================================
 -- ГОТОВО!
 -- =====================================================
 -- Все таблицы созданы и настроены
