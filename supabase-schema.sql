@@ -481,6 +481,9 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Удаляем индекс на role, если он существует (должен быть до удаления колонки)
+DROP INDEX IF EXISTS idx_users_role;
+
 -- Удаляем колонку role, если она существует (для миграции существующих таблиц)
 DO $$ 
 BEGIN
@@ -494,8 +497,10 @@ END $$;
 
 -- Индексы для users
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
+
+-- Удаляем индекс на role, если он существует
+DROP INDEX IF EXISTS idx_users_role;
 
 -- Вставка дефолтного администратора
 INSERT INTO users (id, name, email, password, permissions, tab_permissions) VALUES
