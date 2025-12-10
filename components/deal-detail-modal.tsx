@@ -820,6 +820,18 @@ export function DealDetailModal({
                               <CommandList>
                                 <CommandEmpty>Мопеды не найдены</CommandEmpty>
                                 <CommandGroup>
+                                  <CommandItem
+                                    onSelect={() => {
+                                      setIsMopedPopoverOpen(false)
+                                      setIsCreateMopedOpen(true)
+                                    }}
+                                    className="cursor-pointer border-t"
+                                  >
+                                    <div className="flex items-center gap-2 w-full text-primary">
+                                      <IconScooter className="size-4" />
+                                      <span className="text-sm font-medium">Создать новый мопед</span>
+                                    </div>
+                                  </CommandItem>
                                   {filteredMopeds.map((moped) => (
                                     <CommandItem
                                       key={moped.id}
@@ -1010,6 +1022,18 @@ export function DealDetailModal({
                               <CommandList>
                                 <CommandEmpty>Контакты не найдены</CommandEmpty>
                                 <CommandGroup>
+                                  <CommandItem
+                                    onSelect={() => {
+                                      setIsEmergencyContactPopoverOpen(false)
+                                      setIsCreateEmergencyContactOpen(true)
+                                    }}
+                                    className="cursor-pointer border-t"
+                                  >
+                                    <div className="flex items-center gap-2 w-full text-primary">
+                                      <IconUser className="size-4" />
+                                      <span className="text-sm font-medium">Создать новый контакт</span>
+                                    </div>
+                                  </CommandItem>
                                   {filteredEmergencyContacts.map((contact) => (
                                     <CommandItem
                                       key={contact.id}
