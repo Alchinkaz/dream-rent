@@ -711,6 +711,8 @@ export function DealDetailModal({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className={`!max-w-4xl ${isMobile ? 'w-[100vw] h-[100vh] max-h-[100vh] m-0 rounded-none' : isTablet ? 'w-[95vw] max-h-[95vh] h-[95vh]' : 'w-[85vw] max-h-[95vh] h-[95vh]'} overflow-hidden flex flex-col p-0 ${isMobile ? 'm-0 rounded-none' : ''}`}>
+          <DialogTitle className="sr-only">{isNewDeal ? "Новая заявка" : "Редактировать заявку"}</DialogTitle>
+          <DialogDescription className="sr-only">{isNewDeal ? "Создайте новую заявку на аренду" : "Измените информацию о заявке"}</DialogDescription>
           <div className="flex flex-col gap-6 p-8 pb-6 border-b shrink-0">
             <div className="flex items-center gap-3 group">
               <div className="relative pb-1">
@@ -953,8 +955,8 @@ export function DealDetailModal({
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{savedContact.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{savedContact.phone}</p>
+                            <p className="text-sm font-medium truncate">{savedContact.name || ""}</p>
+                            <p className="text-xs text-muted-foreground truncate">{savedContact.phone || ""}</p>
                           </div>
                           <Button
                             variant="ghost"
@@ -1055,8 +1057,8 @@ export function DealDetailModal({
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{savedEmergencyContact.name}</p>
-                            <p className="text-xs text-muted-foreground truncate">{savedEmergencyContact.phone}</p>
+                            <p className="text-sm font-medium truncate">{savedEmergencyContact.name || ""}</p>
+                            <p className="text-xs text-muted-foreground truncate">{savedEmergencyContact.phone || ""}</p>
                           </div>
                           <Button
                             variant="ghost"
