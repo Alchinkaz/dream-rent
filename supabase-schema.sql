@@ -485,14 +485,25 @@ CREATE TABLE IF NOT EXISTS users (
 DROP INDEX IF EXISTS idx_users_role;
 
 -- Удаляем колонку role, если она существует (для миграции существующих таблиц)
+-- Используем более безопасную проверку через pg_attribute
 DO $$ 
 BEGIN
+    -- Проверяем существование колонки через pg_attribute (более надежно)
     IF EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'users' AND column_name = 'role'
+        SELECT 1 FROM pg_attribute 
+        WHERE attrelid = 'users'::regclass 
+        AND attname = 'role' 
+        AND NOT attisdropped
     ) THEN
         ALTER TABLE users DROP COLUMN role;
     END IF;
+EXCEPTION
+    WHEN undefined_table THEN
+        -- Таблица users еще не существует, ничего не делаем
+        NULL;
+    WHEN OTHERS THEN
+        -- Игнорируем другие ошибки (например, колонка уже удалена)
+        NULL;
 END $$;
 
 -- Индексы для users
