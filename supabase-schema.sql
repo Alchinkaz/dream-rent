@@ -489,10 +489,10 @@ CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
 
 -- Вставка дефолтного администратора
 INSERT INTO users (id, name, email, password, role, permissions, tab_permissions) VALUES
-    ('admin-default', 'Администратор', 'info@dreamrent.kz', 'kyadr3thcxvsgxok)Rca', 'admin', 
+    ('00000000-0000-0000-0000-000000000001'::uuid, 'Администратор', 'info@dreamrent.kz', 'kyadr3thcxvsgxok)Rca', 'admin', 
      '["dashboard", "finances", "motorcycles", "mopeds", "mopeds.rentals", "mopeds.inventory", "mopeds.contacts", "cars", "apartments", "clients", "projects", "settings", "help", "users"]'::jsonb,
      '{"mopeds": [{"tab": "rentals", "access": "edit"}, {"tab": "inventory", "access": "edit"}, {"tab": "contacts", "access": "edit"}], "cars": [{"tab": "rentals", "access": "edit"}, {"tab": "inventory", "access": "edit"}, {"tab": "contacts", "access": "edit"}], "motorcycles": [{"tab": "rentals", "access": "edit"}, {"tab": "inventory", "access": "edit"}, {"tab": "contacts", "access": "edit"}], "apartments": [{"tab": "rentals", "access": "edit"}, {"tab": "inventory", "access": "edit"}, {"tab": "contacts", "access": "edit"}]}'::jsonb)
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (email) DO NOTHING;
 
 -- Триггер для автоматического обновления updated_at
 DROP TRIGGER IF EXISTS update_users_updated_at ON users;
