@@ -952,6 +952,7 @@ export function MopedsContent() {
                           onEditStage={handleEditStage}
                           onDeleteStage={handleDeleteStage}
                           mopedMap={mopedMap}
+                          isMobile={isMobile}
                         />
                       ))
                     )}
