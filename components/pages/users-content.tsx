@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { IconShieldLock, IconTrash, IconUserPlus, IconPencil, IconChevronDown } from "@tabler/icons-react"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -380,18 +381,18 @@ export function UsersContent() {
   }
 
   return (
-    <div className="py-8 px-4 lg:px-8 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="py-4 sm:py-6 lg:py-8 px-2 sm:px-4 lg:px-8 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
         <div>
-          <h1 className="text-2xl font-semibold">Пользователи</h1>
-          <p className="text-sm text-muted-foreground">Управление доступами пользователей.</p>
+          <h1 className="text-xl sm:text-2xl font-semibold">Пользователи</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Управление доступами пользователей.</p>
         </div>
-        <Badge variant="secondary">
+        <Badge variant="secondary" className="w-fit">
           Всего: {users.length}
         </Badge>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[400px_1fr] gap-6 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-[400px_1fr] gap-4 sm:gap-6 items-start">
         <Card>
           <CardHeader className="space-y-2">
             <CardTitle className="flex items-center gap-2 text-base font-semibold">
@@ -437,9 +438,9 @@ export function UsersContent() {
 
               <div className="space-y-2">
                 <Label>Доступы к разделам</Label>
-                <div className="grid grid-cols-2 gap-2 rounded-lg border p-3 max-h-[200px] overflow-y-auto">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 rounded-lg border p-2 sm:p-3 max-h-[200px] overflow-y-auto">
                   {MAIN_PERMISSIONS.map((permission) => (
-                    <label key={permission} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <label key={permission} className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer">
                       <Checkbox
                         checked={form.permissions.includes(permission)}
                         onCheckedChange={() => handlePermissionToggle(permission)}
@@ -484,74 +485,130 @@ export function UsersContent() {
           <CardContent>
             {users.length === 0 ? (
               <p className="text-sm text-muted-foreground">Пока нет пользователей.</p>
+            ) : isMobile ? (
+              // Мобильная версия - карточки
+              <div className="space-y-3">
+                {users.map((u) => (
+                  <Card key={u.id} className="border">
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-medium text-sm truncate">{u.name}</h3>
+                            {u.email.toLowerCase() === "info@dreamrent.kz" && (
+                              <Badge variant="default" className="text-xs flex-shrink-0">Полный админ</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                        </div>
+                        <div className="flex gap-1 flex-shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleEdit(u)}
+                            aria-label="Редактировать"
+                          >
+                            <IconPencil className="size-4" />
+                          </Button>
+                          {u.email.toLowerCase() !== "info@dreamrent.kz" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleDelete(u.id)}
+                              aria-label="Удалить"
+                            >
+                              <IconTrash className="size-4 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {u.permissions.slice(0, 3).map((p) => (
+                          <Badge key={p} variant="outline" className="text-xs">
+                            {PERMISSION_LABELS[p]}
+                          </Badge>
+                        ))}
+                        {u.permissions.length > 3 && (
+                          <Badge variant="outline" className="text-xs">+{u.permissions.length - 3}</Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Имя</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Доступы</TableHead>
-                    <TableHead className="text-right">Действия</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users.map((u) => (
-                    <TableRow key={u.id}>
-                      <TableCell className="font-medium">{u.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{u.email}</TableCell>
-                      <TableCell className="max-w-[300px]">
-                        <div className="flex flex-wrap gap-1">
-                          {u.permissions.slice(0, 5).map((p) => (
-                            <Badge key={p} variant="outline" className="text-xs">
-                              {PERMISSION_LABELS[p]}
-                            </Badge>
-                          ))}
-                          {u.permissions.length > 5 && (
-                            <Badge variant="outline" className="text-xs">+{u.permissions.length - 5}</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2 items-center">
-                          {u.email.toLowerCase() === "info@dreamrent.kz" ? (
-                            <>
-                              <Badge variant="default" className="mr-2">Полный админ</Badge>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEdit(u)}
-                                aria-label="Редактировать"
-                                title="Просмотр прав (все права защищены)"
-                              >
-                                <IconPencil className="size-4" />
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEdit(u)}
-                                aria-label="Редактировать"
-                              >
-                                <IconPencil className="size-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDelete(u.id)}
-                                aria-label="Удалить"
-                              >
-                                <IconTrash className="size-4 text-destructive" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
+              // Десктопная версия - таблица
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Имя</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Доступы</TableHead>
+                      <TableHead className="text-right">Действия</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((u) => (
+                      <TableRow key={u.id}>
+                        <TableCell className="font-medium">{u.name}</TableCell>
+                        <TableCell className="text-muted-foreground">{u.email}</TableCell>
+                        <TableCell className="max-w-[300px]">
+                          <div className="flex flex-wrap gap-1">
+                            {u.permissions.slice(0, 5).map((p) => (
+                              <Badge key={p} variant="outline" className="text-xs">
+                                {PERMISSION_LABELS[p]}
+                              </Badge>
+                            ))}
+                            {u.permissions.length > 5 && (
+                              <Badge variant="outline" className="text-xs">+{u.permissions.length - 5}</Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2 items-center">
+                            {u.email.toLowerCase() === "info@dreamrent.kz" ? (
+                              <>
+                                <Badge variant="default" className="mr-2">Полный админ</Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEdit(u)}
+                                  aria-label="Редактировать"
+                                  title="Просмотр прав (все права защищены)"
+                                >
+                                  <IconPencil className="size-4" />
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleEdit(u)}
+                                  aria-label="Редактировать"
+                                >
+                                  <IconPencil className="size-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDelete(u.id)}
+                                  aria-label="Удалить"
+                                >
+                                  <IconTrash className="size-4 text-destructive" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
