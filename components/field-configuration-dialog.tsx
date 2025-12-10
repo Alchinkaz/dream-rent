@@ -176,7 +176,7 @@ function AddFieldDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editingField ? "Редактировать поле" : "Добавить поле"}</DialogTitle>
           <DialogDescription>Настройте параметры пользовательского поля</DialogDescription>
@@ -361,7 +361,7 @@ export function FieldConfigurationDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className={`max-w-4xl ${isMobile ? 'w-[95vw] h-[95vh] max-h-[95vh]' : 'max-h-[90vh]'} overflow-hidden flex flex-col`}>
           <DialogHeader>
             <DialogTitle>Настройка свойств полей и групп</DialogTitle>
             <DialogDescription>

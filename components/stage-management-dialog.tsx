@@ -182,7 +182,7 @@ export function StageManagementDialog({ open, onOpenChange, stages, onSave }: St
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Управление стадиями</DialogTitle>
           <DialogDescription>

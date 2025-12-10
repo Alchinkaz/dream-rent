@@ -859,7 +859,7 @@ export function DealDetailModal({
                               Добавить контакт
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-[250px] p-0" align="start">
+                          <PopoverContent className={`${isMobile ? 'w-[calc(100vw-2rem)]' : 'w-[250px]'} p-0`} align="start">
                             <Command shouldFilter={false}>
                               <CommandInput
                                 placeholder="Поиск по имени или номеру..."
@@ -947,7 +947,7 @@ export function DealDetailModal({
                               Добавить контакт
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-[250px] p-0" align="start">
+                          <PopoverContent className={`${isMobile ? 'w-[calc(100vw-2rem)]' : 'w-[250px]'} p-0`} align="start">
                             <Command shouldFilter={false}>
                               <CommandInput
                                 placeholder="Поиск по имени или номеру..."
@@ -1151,11 +1151,11 @@ export function DealDetailModal({
             </div>
           </ScrollArea>
 
-          <div className="flex items-center justify-end gap-2 px-8 py-4 border-t bg-muted/30 shrink-0">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <div className={`flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 ${isMobile ? 'px-4' : 'px-8'} py-4 border-t bg-muted/30 shrink-0`}>
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
               Отмена
             </Button>
-            <Button onClick={handleSave} disabled={!editedDeal.clientName || !editedDeal.clientName.trim()}>
+            <Button onClick={handleSave} disabled={!editedDeal.clientName || !editedDeal.clientName.trim()} className="w-full sm:w-auto">
               Сохранить
             </Button>
           </div>
