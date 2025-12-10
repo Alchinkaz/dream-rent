@@ -258,14 +258,17 @@ export function UsersContent() {
     setError("")
     setSuccess("")
 
+    const isDefaultAdmin = editingUser.email.toLowerCase() === "info@dreamrent.kz"
+    
     const updates: Partial<AppUser> = {
       name: editForm.name.trim(),
-      permissions: editForm.permissions,
-      tabPermissions: editForm.tabPermissions,
+      // Для дефолтного администратора не отправляем права - они будут восстановлены автоматически в updateUser
+      permissions: isDefaultAdmin ? undefined : editForm.permissions,
+      tabPermissions: isDefaultAdmin ? undefined : editForm.tabPermissions,
     }
 
-    // Обновляем email только если он изменился
-    if (editForm.email.trim() !== editingUser.email) {
+    // Обновляем email только если он изменился (и это не дефолтный администратор)
+    if (!isDefaultAdmin && editForm.email.trim() !== editingUser.email) {
       updates.email = editForm.email.trim()
     }
 
@@ -281,7 +284,7 @@ export function UsersContent() {
       return
     }
 
-    setSuccess("Пользователь обновлен")
+    setSuccess(isDefaultAdmin ? "Пользователь обновлен (права защищены и восстановлены до максимальных)" : "Пользователь обновлен")
     setEditingUser(null)
     const usersList = await getUsers()
     setUsers(usersList)
