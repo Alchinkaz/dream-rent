@@ -475,9 +475,8 @@ CREATE TABLE IF NOT EXISTS users (
     name TEXT NOT NULL,
     email TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('admin', 'manager', 'viewer')),
-    permissions JSONB DEFAULT '[]'::jsonb, -- Массив строк с разрешениями
-    tab_permissions JSONB DEFAULT '{}'::jsonb, -- Объект с правами на вкладки
+    permissions JSONB DEFAULT '[]'::jsonb, -- Массив строк с разрешениями на разделы
+    tab_permissions JSONB DEFAULT '{}'::jsonb, -- Объект с правами на вкладки: { "mopeds": [{ "tab": "rentals", "access": "edit" }] }
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -488,9 +487,9 @@ CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
 
 -- Вставка дефолтного администратора
-INSERT INTO users (id, name, email, password, role, permissions, tab_permissions) VALUES
-    ('00000000-0000-0000-0000-000000000001'::uuid, 'Администратор', 'info@dreamrent.kz', 'kyadr3thcxvsgxok)Rca', 'admin', 
-     '["dashboard", "finances", "motorcycles", "mopeds", "mopeds.rentals", "mopeds.inventory", "mopeds.contacts", "cars", "apartments", "clients", "projects", "settings", "help", "users"]'::jsonb,
+INSERT INTO users (id, name, email, password, permissions, tab_permissions) VALUES
+    ('00000000-0000-0000-0000-000000000001'::uuid, 'Администратор', 'info@dreamrent.kz', 'kyadr3thcxvsgxok)Rca', 
+     '["dashboard", "finances", "motorcycles", "mopeds", "cars", "apartments", "clients", "projects", "settings", "help", "users"]'::jsonb,
      '{"mopeds": [{"tab": "rentals", "access": "edit"}, {"tab": "inventory", "access": "edit"}, {"tab": "contacts", "access": "edit"}], "cars": [{"tab": "rentals", "access": "edit"}, {"tab": "inventory", "access": "edit"}, {"tab": "contacts", "access": "edit"}], "motorcycles": [{"tab": "rentals", "access": "edit"}, {"tab": "inventory", "access": "edit"}, {"tab": "contacts", "access": "edit"}], "apartments": [{"tab": "rentals", "access": "edit"}, {"tab": "inventory", "access": "edit"}, {"tab": "contacts", "access": "edit"}]}'::jsonb)
 ON CONFLICT (email) DO NOTHING;
 

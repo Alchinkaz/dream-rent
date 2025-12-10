@@ -2,16 +2,14 @@
 
 import { supabase } from './supabase'
 
-export type UserRole = "admin" | "manager" | "viewer"
+// Роли больше не используются - права выставляются вручную
+export type UserRole = "admin" | "manager" | "viewer" // Оставлено для обратной совместимости, но не используется
 
 export type AccessPermission =
   | "dashboard"
   | "finances"
   | "motorcycles"
   | "mopeds"
-  | "mopeds.rentals"
-  | "mopeds.inventory"
-  | "mopeds.contacts"
   | "cars"
   | "apartments"
   | "clients"
@@ -53,10 +51,11 @@ export type AppUser = {
   name: string
   email: string
   password: string
-  role: UserRole
-  permissions: AccessPermission[]
-  tabPermissions?: Record<string, TabPermission[]> // Например: { "mopeds": [{ tab: "rentals", access: "edit" }, ...] }
+  permissions: AccessPermission[] // Разделы, к которым есть доступ
+  tabPermissions?: Record<string, TabPermission[]> // Права на вкладки: { "mopeds": [{ tab: "rentals", access: "edit" }, ...] }
   createdAt: string
+  // role больше не используется, но может быть в старых данных для обратной совместимости
+  role?: UserRole
 }
 
 const CACHE_KEY = 'crm_users_cache'
@@ -68,9 +67,6 @@ export const PERMISSION_LABELS: Record<AccessPermission, string> = {
   finances: "Финансы",
   motorcycles: "Мотоциклы",
   mopeds: "Мопеды",
-  "mopeds.rentals": "Мопеды → Аренды",
-  "mopeds.inventory": "Мопеды → Учет",
-  "mopeds.contacts": "Мопеды → Контакты",
   cars: "Авто",
   apartments: "Квартиры",
   clients: "Клиенты",
@@ -210,15 +206,21 @@ function clearUsersCache(): void {
 
 // Map database column names to our type
 function mapDbToUser(dbUser: any): AppUser {
+  // Фильтруем старые вложенные разрешения (mopeds.rentals и т.д.)
+  const permissions = (dbUser.permissions || []).filter((p: string) => 
+    !p.includes('.') && ['dashboard', 'finances', 'motorcycles', 'mopeds', 'cars', 'apartments', 'clients', 'projects', 'settings', 'help', 'users'].includes(p)
+  ) as AccessPermission[]
+  
   return {
     id: dbUser.id,
     name: dbUser.name,
     email: dbUser.email,
     password: dbUser.password,
-    role: dbUser.role as UserRole,
-    permissions: (dbUser.permissions || []) as AccessPermission[],
+    permissions,
     tabPermissions: (dbUser.tab_permissions || {}) as Record<string, TabPermission[]>,
     createdAt: dbUser.created_at,
+    // role может быть в старых данных, но не используется
+    role: dbUser.role as UserRole | undefined,
   }
 }
 
@@ -228,7 +230,7 @@ function mapUserToDb(user: Partial<AppUser>): any {
   if (user.name !== undefined) dbUser.name = user.name
   if (user.email !== undefined) dbUser.email = normalizeEmail(user.email)
   if (user.password !== undefined) dbUser.password = user.password
-  if (user.role !== undefined) dbUser.role = user.role
+  // role больше не сохраняется в БД
   if (user.permissions !== undefined) dbUser.permissions = user.permissions
   if (user.tabPermissions !== undefined) dbUser.tab_permissions = user.tabPermissions
   return dbUser
@@ -433,7 +435,7 @@ export async function findUserByCredentials(email: string, password: string): Pr
   }
 }
 
-export async function addUser(newUser: Omit<AppUser, "id" | "createdAt">): Promise<{ user?: AppUser; error?: string }> {
+export async function addUser(newUser: Omit<AppUser, "id" | "createdAt" | "role">): Promise<{ user?: AppUser; error?: string }> {
   try {
     const normalizedEmail = normalizeEmail(newUser.email)
     
@@ -451,8 +453,8 @@ export async function addUser(newUser: Omit<AppUser, "id" | "createdAt">): Promi
     const dbUser = mapUserToDb({
       ...newUser,
       email: normalizedEmail,
-      permissions: newUser.permissions.length ? newUser.permissions : ROLE_DEFAULT_PERMISSIONS[newUser.role],
-      tabPermissions: newUser.tabPermissions || ROLE_DEFAULT_TAB_PERMISSIONS[newUser.role],
+      permissions: newUser.permissions || [],
+      tabPermissions: newUser.tabPermissions || {},
     })
     
     const { data, error } = await supabase
@@ -480,7 +482,7 @@ export async function addUser(newUser: Omit<AppUser, "id" | "createdAt">): Promi
   }
 }
 
-export async function updateUser(id: string, updates: Partial<Omit<AppUser, "id" | "createdAt">>): Promise<{ user?: AppUser; error?: string }> {
+export async function updateUser(id: string, updates: Partial<Omit<AppUser, "id" | "createdAt" | "role">>): Promise<{ user?: AppUser; error?: string }> {
   try {
     // Получаем текущего пользователя
     const { data: existingData, error: fetchError } = await supabase
@@ -495,9 +497,11 @@ export async function updateUser(id: string, updates: Partial<Omit<AppUser, "id"
 
     const existing = mapDbToUser(existingData)
 
-    // Проверяем, не пытаемся ли изменить роль стандартного администратора
-    if (normalizeEmail(existing.email) === normalizeEmail(DEFAULT_ADMIN_EMAIL) && updates.role && updates.role !== "admin") {
-      return { error: "Нельзя изменить роль стандартного администратора" }
+    // Проверяем, не пытаемся ли удалить все права у стандартного администратора
+    if (normalizeEmail(existing.email) === normalizeEmail(DEFAULT_ADMIN_EMAIL)) {
+      if (updates.permissions && updates.permissions.length === 0) {
+        return { error: "Нельзя удалить все права у стандартного администратора" }
+      }
     }
 
     // Если обновляется email, проверяем уникальность
@@ -515,7 +519,8 @@ export async function updateUser(id: string, updates: Partial<Omit<AppUser, "id"
 
     const dbUpdates = mapUserToDb({
       ...updates,
-      permissions: updates.permissions?.length ? updates.permissions : existing.permissions,
+      permissions: updates.permissions !== undefined ? updates.permissions : existing.permissions,
+      tabPermissions: updates.tabPermissions !== undefined ? updates.tabPermissions : existing.tabPermissions,
     })
     
     const { data, error } = await supabase

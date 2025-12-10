@@ -28,6 +28,10 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase()
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [user, setUser] = useState<AppUser | null>(null)
@@ -105,7 +109,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const username = useMemo(() => user?.name || user?.email || null, [user])
-  const isAdmin = useMemo(() => (user?.role || "").toLowerCase() === "admin", [user])
+  // isAdmin определяется по наличию всех прав или по email дефолтного администратора
+  const isAdmin = useMemo(() => {
+    if (!user) return false
+    // Дефолтный администратор всегда админ
+    if (normalizeEmail(user.email) === normalizeEmail("info@dreamrent.kz")) return true
+    // Или если есть все права
+    const allPermissions: string[] = ["dashboard", "finances", "motorcycles", "mopeds", "cars", "apartments", "clients", "projects", "settings", "help", "users"]
+    return allPermissions.every(p => user.permissions.includes(p as any))
+  }, [user])
   
   const hasPermission = useMemo(() => {
     return (permission: string) => {

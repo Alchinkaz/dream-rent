@@ -539,7 +539,6 @@ export type Database = {
           name: string
           email: string
           password: string
-          role: 'admin' | 'manager' | 'viewer'
           permissions: any
           tab_permissions: any
           created_at: string
@@ -550,7 +549,6 @@ export type Database = {
           name: string
           email: string
           password: string
-          role: 'admin' | 'manager' | 'viewer'
           permissions?: any
           tab_permissions?: any
           created_at?: string
@@ -561,7 +559,6 @@ export type Database = {
           name?: string
           email?: string
           password?: string
-          role?: 'admin' | 'manager' | 'viewer'
           permissions?: any
           tab_permissions?: any
           created_at?: string
