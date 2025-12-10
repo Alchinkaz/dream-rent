@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { IconShieldLock, IconTrash, IconUserPlus, IconPencil, IconChevronDown } from "@tabler/icons-react"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { useIsTablet } from "@/hooks/use-tablet"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
