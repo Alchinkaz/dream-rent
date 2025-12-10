@@ -231,7 +231,9 @@ export function getCachedUsers(): AppUser[] | null {
       return null
     }
     
-    return JSON.parse(cached) as AppUser[]
+    const users = JSON.parse(cached) as AppUser[]
+    // Гарантируем, что дефолтный администратор всегда имеет все права даже в кэше
+    return users.map(ensureAdminHasAllPermissions)
   } catch (error) {
     console.error('Error reading users cache:', error)
     return null
@@ -368,7 +370,7 @@ export async function getUsers(): Promise<AppUser[]> {
       }
     }
 
-    const mapped = data.map(mapDbToUser)
+    const mapped = data.map(mapDbToUser).map(ensureAdminHasAllPermissions)
     const finalUsers = ensureAdminPresent(mapped)
     setCachedUsers(finalUsers)
     
